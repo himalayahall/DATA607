@@ -25,46 +25,57 @@ library(plotly)
 
 For this assignments a number of data sets are available at <https://data.fivethirtyeight.com/>.
 
-Based on my interest in politics, I selected <https://fivethirtyeight.com/features/the-big-lie-voting-laws/>, which contains data on legatislative measures for major electoral change.
+Based on my interest in politics, I selected <https://fivethirtyeight.com/features/the-big-lie-voting-laws/>, which contains data on legislative measures for major electoral change.
 
-Data for this data set is publickly available as a google spreadsheet. I downloaded the google spreadsheet as a csv file. Both the R file and data set are available on github:
+Data for this data set is publicly available as a google spreadsheet. Working directly with the google spreadsheet involved OAuth and was cumbersome, so I downloaded the google spreadsheet as a csv file. After downloading the spreadsheet, next step was loading it into R:
 
 ```{r read-dataset}
 ds <- read.table(file="The Big Lie's Long Shadow - Sheet1.csv", header=TRUE, sep=",")
 ```
 
-A glimpse shows the data set has 579 rows and 5 columns:
+Summary shows the data set has 579 rows and 5 columns:
 
 ```{r show-summary}
 summary(ds)
 ```
 
-Status of the proposed legislative measure is an important value. It tells us whether the proposed legislative measure passed or not, became laws or not. Let's convert this column data type (Mode) from character to factor:
+Status of the proposed legislative measure tells us whether the proposed legislative measure passed (or not), was signed into law (or not), etc. Notice that Status is a character data type.
+
+Let's convert data type from character to factor. This makes it easier to analyze Status. For example, notice the summary of  modified data set shows factor counts. The counts show that for a majority of measure the legislature adjourned without passing. Out of 579 measures, 50  were signed into law.
 
 ```{r convert-status-to-factor}
 ds <- ds %>% mutate(Status = as.factor(Status))
 summary(ds)
 ```
 
-Let's take a look at the complete summary of Status. There are **30** unique nominal values (a lot). Measures traverse a long journey from being introduced to passage: they may (may not) pass the House or the Senate, may (may not) be signed into law:
+Now, let's change the Introducing Party values as follows: D: Democrat, R: Republican, Mostly D: Majority Democrat, Mostly R: Majority Republican:
+
+```{r}
+ds$Introducing.Party[ds$Introducing.Party == "D"] <- 'Democrat'
+ds$Introducing.Party[ds$Introducing.Party == "R"] <- 'Republican'
+ds$Introducing.Party[ds$Introducing.Party == "Mostly D"] <- 'Mostly Democrat'
+ds$Introducing.Party[ds$Introducing.Party == "Mostly R"] <- 'Mostly Republican'
+```
+
+Let's take a look at the complete summary of Status. There are **30** unique nominal values (a lot). Clearly, measures traverse a long journey from being introduced to being passed: they may (may not) pass the House or the Senate, may (may not) be signed into law:
 
 ```{r show-Status-summary}
 summary(ds$Status)
 ```
 
-A quick plot of Status values shows that for a majority of measures either the 'Legislature adjourned without passing' or the measure was 'Referred to committee':
+A quick plot of Status shows that for a majority of measures either the 'Legislature adjourned without passing' or the measure was 'Referred to committee':
 
 ```{r plot-Status}
 plot_ly(ds, x=ds$Status)
 ```
 
-The nominal value **Signed into law** identifies the legislative initiatives that actually survived the long legislative process and became laws. To make it easy to identify measure that became law, we do the following:
+The nominal value **Signed into law** identifies the legislative initiatives that actually survived the long legislative process and became laws. To make it easy to identify and work with measures that became law, we do the following trtansformations:
 
 1.  Add a new logical column **Signed Into Law**
-2.  Each entry in this column will be TRUE (FALSE) if the corresponding Status is (is not) 'Signed into law'
+1.  Each entry in this column will be TRUE (FALSE) if the corresponding Status is (is not) 'Signed into law'
 
 ```{r add-signed-into-law}
-ds <- ds %>% mutate('Signed Into Law' = Status == 'Signed into law')
+ds <- ds %>% mutate('Signed Into Law' = (Status == 'Signed into law'))
 ```
 
 Final data set:
