@@ -2,7 +2,9 @@
 title: "Basic Loading and Transformation"
 author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -28,7 +30,7 @@ ds <- read.table(file="The Big Lie's Long Shadow - Sheet1.csv", header=TRUE, sep
 
 A glimpse shows the data set has 579 rows and 5 columns:
 
-```{r dataset-show-summary}
+```{r show-summary}
 summary(ds)
 ```
 
@@ -41,7 +43,7 @@ summary(ds)
 
 Let's take a look at the complete summary of Status. There are **30** unique nominal values (a lot). Measures traverse a long journey from being introduced to passage: they may (may not) pass the House or the Senate, may (may not) be signed into law:
 
-```{r factor-Status}
+```{r show-Status-summary}
 summary(ds$Status)
 ```
 
@@ -56,13 +58,13 @@ The nominal value **Signed into law** identifies the legislative initiatives tha
 1. Add a new logical column **Signed Into Law**
 1. Each entry in this column will be TRUE (FALSE) if the corresponding Status is (is not) 'Signed into law'
 
-```{r plot-Status}
+```{r add-signed-into-law}
 ds <- ds %>% mutate('Signed Into Law' = Status == 'Signed into law')
 ```
 
 Final data set:
 
-```{r}
+```{r show-final-summary}
 summary(ds)
 ```
 
