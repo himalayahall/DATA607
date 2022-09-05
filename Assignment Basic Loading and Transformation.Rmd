@@ -21,7 +21,7 @@ library(dplyr)
 library(plotly)
 ```
 
-## Loading data in Data Frame
+## Introduction
 
 For this assignments a number of data sets are available at <https://data.fivethirtyeight.com/>.
 
@@ -50,11 +50,17 @@ summary(ds)
 
 Now, let's change the Introducing Party values as follows: D: Democrat, R: Republican, Mostly D: Majority Democrat, Mostly R: Majority Republican:
 
-```{r}
+```{r change-column-values}
 ds$Introducing.Party[ds$Introducing.Party == "D"] <- 'Democrat'
 ds$Introducing.Party[ds$Introducing.Party == "R"] <- 'Republican'
 ds$Introducing.Party[ds$Introducing.Party == "Mostly D"] <- 'Mostly Democrat'
 ds$Introducing.Party[ds$Introducing.Party == "Mostly R"] <- 'Mostly Republican'
+```
+
+Let's make sure column values were indeed changed by looking at unique values. 
+
+```{r show-head}
+unique(ds$Introducing.Party)
 ```
 
 Let's take a look at the complete summary of Status. There are **30** unique nominal values (a lot). Clearly, measures traverse a long journey from being introduced to being passed: they may (may not) pass the House or the Senate, may (may not) be signed into law:
@@ -83,3 +89,6 @@ Final data set:
 ```{r show-final-summary}
 summary(ds)
 ```
+
+## Summary
+Impact of the 'Big Lie' on legislative measures for the electoral process is a highly relevant topic. One way to extend this analysis would be to collate census data into the study to see what percentage of the population is impacted by the proposed legislature. It would also be relevant to study correlations between proposed measures and 'swing' states'.
