@@ -1,0 +1,68 @@
+---
+title: "Basic Loading and Transformation"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(plotly)
+```
+
+## Loading data in Data Frame
+
+For this assignments a number of data sets are available at https://data.fivethirtyeight.com/. 
+
+Based on my interest in politics, I selected https://fivethirtyeight.com/features/the-big-lie-voting-laws/, which contains data on legatislative measures for major electoral change.
+
+Data for this data set is publickly available as  a google spreadsheet. I downloaded the google spreadsheet as a csv file. Both the R file and data set are available on github: 
+
+```{r read-dataset}
+ds <- read.table(file="The Big Lie's Long Shadow - Sheet1.csv", header=TRUE, sep=",")
+```
+
+A glimpse shows the data set has 579 rows and 5 columns:
+
+```{r dataset-show-summary}
+summary(ds)
+```
+
+Status of the proposed legislative measure is an important value. It tells us whether the proposed legislative measure passed or not, became laws or not. Let's convert this column data type (Mode) from character to factor:
+
+```{r convert-status-to-factor}
+ds <- ds %>% mutate(Status = as.factor(Status))
+summary(ds)
+```
+
+Let's take a look at the complete summary of Status. There are **30** unique nominal values (a lot). Measures traverse a long journey from being introduced to passage: they may (may not) pass the House or the Senate, may (may not) be signed into law:
+
+```{r factor-Status}
+summary(ds$Status)
+```
+
+A quick plot of Status values shows that for a majority of measures either the 'Legislature adjourned without passing' or the measure was 'Referred to committee':
+
+```{r plot-Status}
+plot_ly(ds, x=ds$Status)
+```
+
+The nominal value **Signed into law** identifies the legislative initiatives that actually survived the long legislative process and became laws. To make it easy to identify measure that became law, we do the following:
+
+1. Add a new logical column **Signed Into Law**
+1. Each entry in this column will be TRUE (FALSE) if the corresponding Status is (is not) 'Signed into law'
+
+```{r plot-Status}
+ds <- ds %>% mutate('Signed Into Law' = Status == 'Signed into law')
+```
+
+Final data set:
+
+```{r}
+summary(ds)
+```
+
