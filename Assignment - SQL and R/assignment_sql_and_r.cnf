@@ -1,0 +1,6 @@
+[movie_ratings]
+user=guest
+password=guest
+host=127.0.0.1
+port=3306
+database=Assignment - SQL and R
