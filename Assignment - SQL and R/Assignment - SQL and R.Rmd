@@ -22,7 +22,7 @@ library(dplyr)
 ```
 
 ## Database connection
-Connect to the MySql database using MariaDB driver. For security reasons, connection details are stored in a CNF file in a directory that is accessible by R. e.g., the current working directory.
+Connect to the MySql database using the **MariaDB** driver. For security reasons, connection details are stored in a **CNF** file in a directory that is accessible by R. e.g., the current working directory.
 
 ```{r database-connect-function}
 rmariadb.settingsfile <- 'assignment_sql_and_r.cnf'
@@ -44,6 +44,13 @@ For sanity check, list the tables:
 ```{r list-tables}
 dbListTables(db)
 ```
+
+## Database schema
+The schema is is normalized into 3 tables: FRIENDS, MOVIES, and RATINGS. This design allows all 3 schemas to evolve independently. For example, adding additional details to FRIENDS, like date of birth and address, can be done without impact the other schemas. Similarly, details can be added to MOVIES, e.g. director and release date.
+
+Furthermore, for referential integrity, **foreign keys** have been added to RATINGS table. ER diagram for this schema is shown below:
+
+![](Model.png)
 
 Load the FRIENDS table:
 ```{r load-friends}
