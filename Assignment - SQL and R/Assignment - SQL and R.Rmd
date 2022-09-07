@@ -19,6 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(RMariaDB)
 library(dplyr)
+library(knitr)
 ```
 
 ## Database connection
@@ -46,11 +47,9 @@ dbListTables(db)
 ```
 
 ## Database schema
-The schema is is normalized into 3 tables: FRIENDS, MOVIES, and RATINGS. This design allows all 3 schemas to evolve independently. For example, adding additional details to FRIENDS, like date of birth and address, can be done without impact the other schemas. Similarly, details can be added to MOVIES, e.g. director and release date.
+The schema is is normalized into 3 tables: FRIENDS, MOVIES, and RATINGS. This design allows all 3 entities to evolve independently. For example, adding additional details to FRIENDS, date of birth and address, can be done without impacting other entities Similarly, more metadata can be added to MOVIES, e.g., name of the director and release date.
 
-Furthermore, for referential integrity, **foreign keys** have been added to RATINGS table. ER diagram for this schema is shown below:
-
-![](Model.png)
+To view foreign key relationships, click [ ER diagram ](https://www.dropbox.com/s/acrv7b2nydb6x72/Model.png?dl=0)
 
 Load the FRIENDS table:
 ```{r load-friends}
@@ -70,7 +69,11 @@ movies <- dbFetch(rs, n=-1)
 dbClearResult(rs)
 head(movies)
 ```
-Finally, load the movie ratings. Since the database schema is normalized, join the FRIENDS, MOVIES, and RATINGS tables to load rating. Ignore 'missing' ratings - the RATINGS.RATING column is an enumeration [0, 1, 2, 3, 4, 5] where 0 (default) denotes unrated movies.
+Finally, load the RATINGS.  Since the database schema is normalized, join FRIENDS, MOVIES, and RATINGS tables to load aggregate ratings data. 
+
+**Missing Ratings**: it is possible, even highly likely, that not all friends have viewed all movies. This database schema accommodates this by design - only rated movies need be loaded into RATINGS table. 
+
+However, to allow for 'NA' ratings to be loaded, the RATINGS.RATING columns is defined as an ENUM [0, 1, 2, 3, 4, 5], where 0 (default) is for unrated movies.
 
 
 ```{r load-ratings}
