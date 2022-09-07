@@ -3,10 +3,10 @@ title: "Basic Loading and Transformation"
 author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
+  pdf_document: default
   html_document:
     toc: true
     toc_float: true
-  pdf_document: default
 always_allow_html: true
 editor_options: 
   chunk_output_type: console
@@ -27,10 +27,10 @@ For this assignments a number of data sets are available at <https://data.fiveth
 
 Based on my interest in politics, I selected <https://fivethirtyeight.com/features/the-big-lie-voting-laws/>, which contains data on legislative measures for major electoral change.
 
-Data for this data set is publicly available as a google spreadsheet. Working directly with the google spreadsheet involved OAuth and was cumbersome, so I downloaded the google spreadsheet as a csv file. After downloading the spreadsheet, next step was loading it into R:
+Data for this data set is publicly available as a google spreadsheet. Working directly with the google spreadsheet involved OAuth and was cumbersome, so I uploaded the google spreadsheet into github as a csv file. Next step was loading the github file into R:
 
 ```{r read-dataset}
-ds <- read.table(file="The Big Lie's Long Shadow - Sheet1.csv", header=TRUE, sep=",")
+ds <- read.csv("https://raw.githubusercontent.com/himalayahall/DATA607/14f1be10f0251c20943e908c07f7002341496641/The%20Big%20Lie's%20Long%20Shadow%20-%20Sheet1.csv")
 ```
 
 Summary shows the data set has 579 rows and 5 columns:
