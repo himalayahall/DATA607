@@ -24,28 +24,30 @@ USE `Assignment - SQL and R` ;
 -- Table `Assignment - SQL and R`.`FRIENDS`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `Assignment - SQL and R`.`FRIENDS` (
-  `FRIEND_ID` INT NOT NULL AUTO_INCREMENT,
+  `ID` INT NOT NULL AUTO_INCREMENT,
   `FIRST_NAME` VARCHAR(45) NOT NULL,
   `LAST_NAME` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`FRIEND_ID`))
+  PRIMARY KEY (`ID`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 6
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
+ALTER TABLE `Assignment - SQL and R`.`FRIENDS` AUTO_INCREMENT=1;
 
 -- -----------------------------------------------------
 -- Table `Assignment - SQL and R`.`MOVIES`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `Assignment - SQL and R`.`MOVIES` (
-  `MOVIE_ID` INT NOT NULL AUTO_INCREMENT,
+  `ID` INT NOT NULL AUTO_INCREMENT,
   `TITLE` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`MOVIE_ID`))
+  PRIMARY KEY (`ID`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 15
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
+ALTER TABLE `Assignment - SQL and R`.`MOVIES` AUTO_INCREMENT=1;
 
 -- -----------------------------------------------------
 -- Table `Assignment - SQL and R`.`RATINGS`
@@ -58,11 +60,11 @@ CREATE TABLE IF NOT EXISTS `Assignment - SQL and R`.`RATINGS` (
   INDEX `MOVIE_ID_idx` (`MOVIE_ID` ASC) VISIBLE,
   CONSTRAINT `FRIEND_ID`
     FOREIGN KEY (`FRIEND_ID`)
-    REFERENCES `Assignment - SQL and R`.`FRIENDS` (`FRIEND_ID`)
+    REFERENCES `Assignment - SQL and R`.`FRIENDS` (`ID`)
     ON DELETE CASCADE,
   CONSTRAINT `MOVIE_ID`
     FOREIGN KEY (`MOVIE_ID`)
-    REFERENCES `Assignment - SQL and R`.`MOVIES` (`MOVIE_ID`)
+    REFERENCES `Assignment - SQL and R`.`MOVIES` (`ID`)
     ON DELETE CASCADE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4

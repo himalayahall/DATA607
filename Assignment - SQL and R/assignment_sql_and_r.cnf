@@ -1,6 +1,13 @@
-[movie_ratings]
+[local_movie_ratings]
 user=guest
-password=guest
+password=guestpass
 host=127.0.0.1
+port=3306
+database=Assignment - SQL and R
+
+[remote_movie_ratings]
+user=guest
+password=guestpass
+host=cuny-ds.c5iiratvieki.us-east-1.rds.amazonaws.com
 port=3306
 database=Assignment - SQL and R
