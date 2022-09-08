@@ -48,6 +48,8 @@ A pre-configured AWS MySQL database has been set up and pre-populated with data 
 
 To get around this limitation, I created a custom security group in AWS and configured it's **Inbound rules** as follows: **Protocol**: TCP, **Type**: MYSQL/AURORA, **Port range**: 3306, **Source**:0.0.0.0/0. Finally, I assigned this security group to the RDS database. RDS can now be accessed over the internet from R Studio and MySQL Workbench.
 
+Note: connection to any database assumes the server is in a running state. Connection attempts will fail in case the preconfigured RDS database is shutdown.
+
 ### Test Remote Database Connection
 To test connectivity to the RDS MySQL database do the following:
 
@@ -87,45 +89,50 @@ library(knitr)
 ```
 
 # Database Connection
-For security reasons, database connection details are stored in a **CNF** file and not exposed in this R script. This CNF file should be downloaded from github and installed as described below.
+For security reasons, database connection details  may be stored in a **CNF** file and not exposed in R scripts. This R script uses this technique and the CNF file **must** be downloaded from github and installed as described below.
 
 ## Install CNF File
-1. Download [CNF file](https://github.com/himalayahall/DATA607/blob/48f9648f8511223a73e0c5d1fa88bcc2d81fede6/Assignment%20-%20SQL%20and%20R/assignment_sql_and_r.cnf) to local storage in a folder that is accessible by R runtime e.g., current working directory. From the R console run **getwd()** command to see the current working directory. To change the working directory, use the **setwd()** command.
+1. Download [CNF file](https://github.com/himalayahall/DATA607/blob/48f9648f8511223a73e0c5d1fa88bcc2d81fede6/Assignment%20-%20SQL%20and%20R/assignment_sql_and_r.cnf) to local storage in a folder that is accessible by R runtime e.g., current working directory. From the R console, run **getwd()** command to see the current working directory. To change the working directory, use the **setwd()** command. Make sure the downloaded CNF file is in the working directory.
+
+Modify **assignment_sql_and_r.cnf** as appropriate for your MySQL installation. For example, CNF has two configurations: **local_movie_ratings** for a local MySQL database and **remote_movie_ratings** for the pre-configured AWS MySQL. Note: the local configuration assumes there is a **guest** database user.
+
+Set variable with name of CNF file. As mentioned above, path to the CNF is the current working directory:
 
 ```{r setup-cnf}
 cnf.settingsfile <- 'assignment_sql_and_r.cnf'
 ```
 
-Modify **assignment_sql_and_r.cnf** as appropriate for your MySQL installation. For example, CNF has two configurations: **local_movie_ratings** for a local MySQL database and **remote_movie_ratings** for the pre-configured AWS MySQL. Note: the local configuration assumes there is a **guest** database user.
-
-## Local Database Connection
-Connect to the MySql database using the **MariaDB** driver. Create a function to connect to the local database:
-
-```{r local-db-connection}
-cnf.group <- 'local_movie_ratings'
-my.dbConnectLocal <- function() {
-    db <- dbConnect(RMariaDB::MariaDB(), default.file=cnf.settingsfile, group=cnf.group)
-   db
-}
-```
-
 ## Remote Database Connection
-Connect to the AWS RDS MySql database using the **RMySQL** driver. Create a function to connect to the remote database:
+Create functions to connect to either the remote or local database. Remote database connections use the using the **RMySQL** driver and local connections use the **MariaDB** driver:
 
 ```{r remote-db-connection}
-cnf.group <- 'remote_movie_ratings'
 my.dbConnectRemote <- function() {
+    cnf.group <- 'remote_movie_ratings'
     db <- dbConnect(RMySQL::MySQL(), default.file=cnf.settingsfile, group=cnf.group)
+    db
+}
+
+my.dbConnectLocal <- function() {
+cnf.group <- 'local_movie_ratings'
+    db <- dbConnect(RMariaDB::MariaDB(), default.file=cnf.settingsfile, group=cnf.group)
+    db
+}
+my.dbConnectRemoteOrLocal <- function(rem_or_local = "remote") {
+    if (startsWith(rem_or_local, 'r')) {
+        db <- my.dbConnectRemote()
+    } else {
+        db <- my.dbConnectLocal()
+    }
     db
 }
 ```
 
 #  Select Remote or Local Database
-Connect to either the remote or local database. Once the connection is made to the appropriate database the rest of the R script remains unchanged:
+Now we select the database to which to connect, remote or local  Once the connection is established to the appropriate database, rest of the R script can remain unchanged:
 
 ```{r database-connect}
-db <- my.dbConnectRemote() # AWS MySQL database
-#db <- my.dbConnectLocal() # Local MySQL database
+db <- my.dbConnectRemoteOrLocal('remote') # AWS MySQL database
+#db <- my.dbConnectLocal('local') # Local MySQL database
 ```
 
 For sanity check, list the tables. As expected, FRIENDS, MOIVIES, and RATINGS tables are listed.
@@ -156,7 +163,7 @@ head(movies)
 ```
 
 # Load Ratings from Database
-Finally, load the RATINGS.  Since the database schema is normalized, join FRIENDS, MOVIES, and RATINGS tables to load aggregate ratings data. 
+Finally, load the RATINGS.  Since the database schema is normalized, join FRIENDS, MOVIES, and RATINGS tables to load aggregate ratings data.
 
 ```{r load-ratings}
 qry <- 'SELECT f.FIRST_NAME, f.LAST_NAME, m.TITLE, r.RATING 
@@ -166,25 +173,24 @@ qry <- 'SELECT f.FIRST_NAME, f.LAST_NAME, m.TITLE, r.RATING
 rs <- dbSendQuery(db, qry)
 ratings <- dbFetch(rs, n=-1)
 dbClearResult(rs)
-summary(ratings)
 head(ratings)
 ```
 
-Enumerations in MySQL are stored as characters. This is not the most convenient representation because we may want to do numeric analysis on ratings, e.g. average movie rating. Convert RATING from character to integer:
+Enumerations in MySQL are stored as characters. This is not the most convenient representation because we may want to do numeric analysis on ratings, e.g. average movie rating. Convert RATING from character to integer. Notice that RATING column has Min. : 0 (missing rating). 
 
 ```{r convert-rating-to-int}
 ratings <- ratings %>% mutate(RATING = as.integer(RATING))
 summary(ratings)
 ```
 
-A rating of 0 is assigned to unrated movies. Filter out data for unrated movies:
+A rating of 0 is assigned to unrated movies. Filter out data for unrated movies. As expected, notice that RATING column now has Min. : 1 (missing rating)
 
 ```{r discard-unrated-movies}
 ratings <- ratings %>% filter(RATING != 0)
 summary(ratings)
 ```
 
-Close (disconnect) database connection:
+Be a good citizen and close the database connection:
 
 ```{r database-disconnect}
 dbDisconnect(db)
