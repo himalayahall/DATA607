@@ -46,9 +46,9 @@ This solution works with either a pre-configured remote AWS (RDS) MySQL database
 ## Remote AWS (RDS) MySQL Database
 A pre-configured AWS MySQL database has been set up and pre-populated with data to make it easy to run this R solution. Creating the AWS MySQL database was straightforward using the wizard. One caveat was that the default security group rules do not permit access to RDS from external IP addresses. In other words, connection to RDS over the open internet is not allowed. 
 
-To get around this limitation, I created a custom security group in AWS and configured it's **Inbound rules** as follows: **Protocol**: TCP, **Type**: MYSQL/AURORA, **Port range**: 3306, **Source**:0.0.0.0/0. Finally, I assigned this security group to the RDS database. RDS can now be accessed over the internet from R Studio and MySQL Workbench.
+To get around this limitation, I has to create a custom security group in AWS and configured it's **Inbound rules** as follows: **Protocol**: TCP, **Type**: MYSQL/AURORA, **Port range**: 3306, **Source**:0.0.0.0/0. Finally, I assigned this security group to the RDS database. With this in place RDS can be accessed over the internet from R Studio and MySQL Workbench.
 
-Note: connection to any database assumes the server is in a running state. Connection attempts will fail in case the preconfigured RDS database is shutdown.
+Note: connection to any database assumes the server is in running state. Connection attempts will fail in case the preconfigured RDS database is shutdown.
 
 ### Test Remote Database Connection
 To test connectivity to the RDS MySQL database do the following:
@@ -67,7 +67,9 @@ Make sure you have MySQL and MySQL Workbench installed. Admin database privilege
 
 ### Create Local Database
 1. Download [schema creation script](https://github.com/himalayahall/DATA607/blob/main/Assignment%20-%20SQL%20and%20R/create_schema.sql) to local storage
-1. In MySQL Workbench click **File - Open SQL Script**, select downloaded file to load into editor, and execute script. On successful execution, schema will be created in MySQL database 
+1. In MySQL Workbench click **File - Open SQL Script**, select downloaded file to load into editor, and execute script. On successful execution, schema will be created in MySQL database. 
+
+Script will also create a **guest** user (if one does not exist) identified by password **guestpass**.
 
 ### Populate Local Database
 1. Load data into FRIENDS table
@@ -117,7 +119,8 @@ cnf.group <- 'local_movie_ratings'
     db <- dbConnect(RMariaDB::MariaDB(), default.file=cnf.settingsfile, group=cnf.group)
     db
 }
-my.dbConnectRemoteOrLocal <- function(rem_or_local = "remote") {
+
+my.dbConnect <- function(rem_or_local = "remote") {
     if (startsWith(rem_or_local, 'r')) {
         db <- my.dbConnectRemote()
     } else {
@@ -128,28 +131,34 @@ my.dbConnectRemoteOrLocal <- function(rem_or_local = "remote") {
 ```
 
 #  Select Remote or Local Database
-Now we select the database to which to connect, remote or local  Once the connection is established to the appropriate database, rest of the R script can remain unchanged:
+Select either the remote (default) or local database. To use the local (remote) database comment out below 'remote' ('local') connect statement and uncomment the 'local' ('remote') connect statement. Rest of the R script can remain unchanged:
 
 ```{r database-connect}
-db <- my.dbConnectRemoteOrLocal('remote') # AWS MySQL database
-#db <- my.dbConnectLocal('local') # Local MySQL database
+db <- my.dbConnect('remote') # AWS MySQL database
+#db <- my.dbConnect('local') # Local MySQL database
 ```
 
-For sanity check, list the tables. As expected, FRIENDS, MOIVIES, and RATINGS tables are listed.
+As sanity check, list the tables. As expected, FRIENDS, MOIVIES, and RATINGS tables are listed.
 
 ```{r list-tables}
 dbListTables(db)
 ```
 
-# Load FRIENDS and MOVIES
+# Load Data
+Now we are ready to load data!
+
+## Load FRIENDS and MOVIES Data
 Load the FRIENDS table:
 
 ```{r load-friends}
 qry <- 'SELECT * FROM FRIENDS ORDER BY FIRST_NAME, LAST_NAME'
-rs <- dbSendQuery(db, qry)
-friends <- dbFetch(rs, n=-1)
-dbClearResult(rs)
-head(friends)
+rs <- dbSendQuery(db, qry)       # Send query for execution
+friends <- dbFetch(rs, n=-1)     # Fetch query results
+head(friends)                    # Display first few results
+```
+
+```{r include=FALSE}
+dbClearResult(rs)     # Clear results cache
 ```
 
 Load the MOVIES table:
@@ -158,12 +167,15 @@ Load the MOVIES table:
 qry <- 'SELECT * FROM MOVIES ORDER BY TITLE'
 rs <- dbSendQuery(db, qry)
 movies <- dbFetch(rs, n=-1)
-dbClearResult(rs)
 head(movies)
 ```
 
-# Load Ratings from Database
-Finally, load the RATINGS.  Since the database schema is normalized, join FRIENDS, MOVIES, and RATINGS tables to load aggregate ratings data.
+```{r include=FALSE}
+dbClearResult(rs)     # Clear results cache
+```
+
+## Load Ratings Data
+Finally, load RATINGS.  Since the database schema is normalized, join FRIENDS, MOVIES, and RATINGS tables to load aggregate ratings data.
 
 ```{r load-ratings}
 qry <- 'SELECT f.FIRST_NAME, f.LAST_NAME, m.TITLE, r.RATING 
@@ -172,25 +184,32 @@ qry <- 'SELECT f.FIRST_NAME, f.LAST_NAME, m.TITLE, r.RATING
             ORDER BY f.FIRST_NAME, f.LAST_NAME, m.TITLE'
 rs <- dbSendQuery(db, qry)
 ratings <- dbFetch(rs, n=-1)
-dbClearResult(rs)
 head(ratings)
 ```
 
-Enumerations in MySQL are stored as characters. This is not the most convenient representation because we may want to do numeric analysis on ratings, e.g. average movie rating. Convert RATING from character to integer. Notice that RATING column has Min. : 0 (missing rating). 
+```{r include=FALSE}
+dbClearResult(rs)     # Clear results cache
+```
+
+## Convert RATINGS.RATING to Integer
+Enumerations in MySQL are stored as characters. This is not the most convenient representation because we may want to do numeric analysis on ratings, e.g. average movie rating. Convert RATING from character to integer. 
+
+Notice that RATING column has Min. : 0. This is due to some rows have a RATING of 0 (missing rating). 
 
 ```{r convert-rating-to-int}
 ratings <- ratings %>% mutate(RATING = as.integer(RATING))
 summary(ratings)
 ```
 
-A rating of 0 is assigned to unrated movies. Filter out data for unrated movies. As expected, notice that RATING column now has Min. : 1 (missing rating)
+A rating of 0 is assigned to unrated movies. Filter out rows for unrated movies. Notice that now, as expected, RATING column has Min. : 1.
 
 ```{r discard-unrated-movies}
 ratings <- ratings %>% filter(RATING != 0)
 summary(ratings)
 ```
 
-Be a good citizen and close the database connection:
+# Close Database Connection
+Be a good citizen: close the database connection.
 
 ```{r database-disconnect}
 dbDisconnect(db)
