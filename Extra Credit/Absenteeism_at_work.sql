@@ -1,0 +1,23 @@
+CREATE TABLE `Absenteeism_at_work` (
+	`ID` DECIMAL(38, 0) NOT NULL, 
+	`Reason for absence` DECIMAL(38, 0) NOT NULL, 
+	`Month of absence` DECIMAL(38, 0) NOT NULL, 
+	`Day of the week` DECIMAL(38, 0) NOT NULL, 
+	`Seasons` DECIMAL(38, 0) NOT NULL, 
+	`Transportation expense` DECIMAL(38, 0) NOT NULL, 
+	`Distance from Residence to Work` DECIMAL(38, 0) NOT NULL, 
+	`Service time` DECIMAL(38, 0) NOT NULL, 
+	`Age` DECIMAL(38, 0) NOT NULL, 
+	`Work load Average day` DECIMAL(38, 3) NOT NULL, 
+	`Hit target` DECIMAL(38, 0) NOT NULL, 
+	`Disciplinary failure` BOOL NOT NULL, 
+	`Education` DECIMAL(38, 0) NOT NULL, 
+	`Son` DECIMAL(38, 0) NOT NULL, 
+	`Social drinker` BOOL NOT NULL, 
+	`Social smoker` BOOL NOT NULL, 
+	`Pet` DECIMAL(38, 0) NOT NULL, 
+	`Weight` DECIMAL(38, 0) NOT NULL, 
+	`Height` DECIMAL(38, 0) NOT NULL, 
+	`Body mass index` DECIMAL(38, 0) NOT NULL, 
+	`Absenteeism time in hours` DECIMAL(38, 0) NOT NULL
+);

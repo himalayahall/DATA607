@@ -1,0 +1,112 @@
+---
+title: "SQL & R - Extra Credit"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE, warning=FALSE}
+library(DBI)
+library(RMySQL)
+library(tidyverse)
+```
+
+# Introduction
+
+Here we do a basic exploration of SQL Window Function.
+
+From PostGreSQL introduction to Windows Function:
+
+    A window function performs a calculation across a set of table rows that are somehow related to the current row. This is comparable to the type of calculation that can be done with an aggregate function. But unlike regular aggregate functions, use of a window function does not cause rows to become grouped into a single output row — the rows retain their separate identities. Behind the scenes, the window function is able to access more than just the current row of the query result.
+    
+# Absenteeism Dataset
+The ![Absenteeism] (https://archive.ics.uci.edu/ml/datasets/Absenteeism+at+work) database was created with records of absenteeism at work from July 2007 to July 2010 at a courier company in Brazil. For this assigment dataset was loaded into a AWS RDS MySQL database. Let's connect to the database:
+
+```{r warning=FALSE}
+db <- dbConnect(RMySQL::MySQL(), user="guest", password="guestpass", host="cuny-ds.c5iiratvieki.us-east-1.rds.amazonaws.com", port=3306, dbname="Assignment - SQL and R - Extra Credit")
+dbListTables(db)
+```
+
+Let's query the Absenteeism table. 
+
+```{r message=FALSE, warning=FALSE}
+qry <- "SELECT * FROM Absenteeism_at_work ORDER BY ID, 'Month of absence', 'Absenteeism time in hours'"
+rs <- dbSendQuery(db, qry)      # Send query for execution
+rows <- dbFetch(rs, n=-1)       # Fetch query results
+dbClearResult(rs)               # Clear results cache
+str(rows)    
+```
+
+Having selected this data set, and well into doing the assignment, I realized there was no *year* column in the dataset. This was problematic because without the year it is impossible to accurately sequence the observations. For example, it is impossible to identify the year in which observations **ID = 2** were made. The first observation could be from year 2007 or from 2008 or from 2009! 
+
+Furthermore, not every month is represented in the observations. For example, observations for ID = 2 are only available for the months of April (4), June (6), July(7), and August(8).
+
+To get around these issues for this assignment, we make some simplifying assumptions:
+
+1. Observations for all IDs start on the same year (2007) and month (1)
+1. Observations for a given ID are for consecutive months (1/2007, 2/2007, ..., 12, 1/2008, 2/2008, ...)
+
+```{r message=FALSE, warning=FALSE}
+qry <- "SELECT * FROM Absenteeism_at_work WHERE ID = 2 ORDER BY ID, 'Month of absence', 'Absenteeism time in hours'"
+rs <- dbSendQuery(db, qry)  
+rows <- dbFetch(rs, n=-1) 
+dbClearResult(rs) 
+str(rows)
+```
+
+
+Since the *Month of Absence* column is irrelevant under these assumptions, we can drop this column:
+
+```{r message=FALSE, warning=FALSE}
+rows <- rows %>% mutate(`Month of absence` = NULL)
+str(rows)
+```
+
+With that preamble out of the way, the 2 columns of interest for this assignment are **ID** (identifying the subject), and target column **Absebteeism time in hours**.
+
+We start with computing the running average of *Absebteeism time in hours* for each subject using plain old GROUP BY function:
+
+```{r warning=FALSE}
+qry <- "select DISTINCT ID, 
+            avg(`Absenteeism time in hours`) AS 'Average'
+            FROM Absenteeism_at_work 
+            GROUP BY ID
+            ORDER BY ID"
+rs <- dbSendQuery(db, qry)  
+rows <- dbFetch(rs, n=-1) 
+dbClearResult(rs) 
+head(rows)
+
+```
+
+Now we do the same computation using Windows Function:
+
+```{r message=FALSE, warning=FALSE}
+qry <- "select DISTINCT ID, 
+            avg(`Absenteeism time in hours`) OVER(PARTITION BY ID) AS 'Average'
+            FROM Absenteeism_at_work 
+            ORDER BY ID"
+rs <- dbSendQuery(db, qry)  
+rows <- dbFetch(rs, n=-1) 
+dbClearResult(rs) 
+head(rows)
+```
+
+Finally, we compute the 6-month and 3-month running average using Window Function. As expected, the aggregation is applied to to each row.
+
+```{r message=FALSE, warning=FALSE}
+qry <- "select DISTINCT ID, 
+				ROUND(avg(`Absenteeism time in hours`) OVER(PARTITION BY ID ROWS BETWEEN 5 PRECEDING AND CURRENT ROW), 1) AS 6_Month_Average,
+                ROUND(avg(`Absenteeism time in hours`) OVER(PARTITION BY ID ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 1) AS 3_Month_Average
+                FROM Absenteeism_at_work 
+                ORDER BY ID, 6_Month_Average, 3_Month_Average;"
+rs <- dbSendQuery(db, qry)  
+rows <- dbFetch(rs, n=-1) 
+head(rows)
+```
+# Conclusion
+This concludes a basic exploration of SQL Window Functions. They are a powerful tool and data scientists should be familiar with them.
