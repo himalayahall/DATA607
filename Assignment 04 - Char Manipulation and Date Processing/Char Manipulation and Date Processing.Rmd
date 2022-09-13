@@ -1,0 +1,113 @@
+---
+title: "R Character Manipulation and Date Processing"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    toc: true
+    toc_depth: 3
+    number_sections: true
+  html_document:
+    
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+boxlinks: true
+urlcolor: blue
+always_allow_html: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+# Assignment
+
+## Search for majors containing "DATA" or "STATISTICS" - 1
+
+Using the 173 majors listed in fivethirtyeight.com’s College Majors dataset [https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/], provide code that identifies the majors that contain either "DATA" or "STATISTICS"  
+
+Load file from GitHub.
+
+```{r load-from-github}
+ds <- read.csv("https://raw.githubusercontent.com/fivethirtyeight/data/2d2ff3e9457549d51f8e571c52099bfe9b2017ad/college-majors/majors-list.csv")
+```
+
+Let's take a look at the unique values of *Major* and *Major_Category* columns. There are 174 unique majors and 16 major categories.
+
+```{r}
+glimpse(as.factor(ds$Major))
+glimpse(as.factor(ds$Major_Category))
+```
+
+Look for all majors that contain either "DATA" or "STATISTICS". Let's assume the search terms may appear in either Major or Major Category columns and we want to look consider both columns.  
+
+The search terms are found in 3 rows:  
+
+1. MANAGEMENT INFORMATION SYSTEMS AND STATISTICS
+1. COMPUTER PROGRAMMING AND DATA PROCESSING
+1. STATISTICS AND DECISION SCIENCE
+
+```{r}
+ds %>%
+    filter(
+            grepl("DATA|STATISTICS", ignore.case = TRUE, Major) | 
+            grepl("DATA|STATISTICS", ignore.case = TRUE, Major_Category)) %>%
+    arrange(Major)
+```
+
+## Transform data - 2
+
+Write code that transforms the data below:
+[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+[13] "olive"        "salal berry"
+Into a format like this:
+c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry")  
+
+Let's generate the input data as a string.
+
+```{r}
+input_data <- '[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"
+[9] "elderberry"   "lime"         "lychee"       "mulberry" 
+[13] "olive"        "salal berry"'
+input_data
+```
+
+Let's extract fruit names from the input, *unlist* to flatten the list into a vector.
+
+```{r}
+input_split <- unlist(str_extract_all(input_data, '"[a-zA-Z ]+"'))
+input_split
+```
+
+Almost there. All that is needed is remove the pesky double quotes. And we are done!
+
+```{r}
+input_clean <- str_remove_all(input_split, '"')
+input_clean
+```
+
+
+## Describe Data - 3
+
+1. (.)\1\1 : matches any character followed by 2 repeats of matching character. Example, aaa*, BBB, 111, etc.
+1. (.)(.)\2\1 : matches any two characters followed by 2^nd matching character followed by the 1^st matching character. For example, abba, 1221, etc. In other words, *palindromes* of length 4.
+1. (..)\1 : two character repeats. For example, abab, 1212.
+1. (.).\1.\1 : matches 5 character strings, where 1^st, 3^rd, and 5^th characters are the same. Example, abaka, *2141, etc.
+1. (.)(.)(.).\*\3\2\1 : matches strings of length *> 5*, where the first 3 characters are repeated at the end in reverse order. For example, abc12345cba.
+
+## Construct regular expressions to match words - 4
+
+1. Start and end with same character: (.).\*\1
+1. Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.): .\*([a-zA-Z])([a-zA-Z]).\*\1\2.\*
+1. Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.): .\*([a-zA-Z]).\*\1.\*\1.\*
