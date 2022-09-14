@@ -21,10 +21,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r}
+knitr::opts_chunk$set(echo = TRUE, warnings = FALSE)
 library(tidyverse)
 ```
 
@@ -112,6 +109,6 @@ unlist(str_extract_all(input_data, '"[a-zA-Z ]+"')) %>% str_remove_all('"')
 
 ## Construct regular expressions to match words - 4
 
-1. Start and end with same character: (.).\*\1
-1. Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.): .\*([a-zA-Z])([a-zA-Z]).\*\1\2.\*
-1. Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.): .\*([a-zA-Z]).\*\1.\*\1.\*
+1. Start and end with same character:  (.).\*\1
+1. Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.):  .\*([a-zA-Z])([a-zA-Z]).\*\1\2.\*
+1. Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.):  .\*([a-zA-Z]).\*\1.\*\1.\*
