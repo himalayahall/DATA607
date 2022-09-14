@@ -1,0 +1,111 @@
+---
+title: "Project 1"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r warning=FALSE}
+library(tidyverse)
+```
+
+# Solution
+
+## Read tournament data
+
+```{r}
+input_data <- read.csv("tournamentinfo.txt")
+```
+
+To make it easier to work with this data let's *unlist* and convert to matrix format.
+
+```{r}
+m <- matrix(unlist(input_data))
+```
+
+Looking at the *head* of the input data we notice that the first 4 rows iare header rows and do not contain player info.
+
+```{r}
+head(m)
+```
+
+Let's skip over the first 3 rows.
+
+```{r skip-header-rows}
+m <- m[seq(4, length(m))]
+```
+
+Next observation is that player data is provided on 2 different rows. One row provides the name of the player and games played by them. The other row provides the player's State and starting rank. For any given player the two rows appear consecutively, followed by a separator line of dashes *--*. 
+
+Using this observation, we split the matrix into 2 components.  
+
+First component is the matrix of player names and games played. Notice that we scoop up every 3^rd^ row, skipping over the player state/rank and the separator line.
+
+```{r players-and-games}
+mPlayersAndGames <- m[seq(1, length(m), 3)]
+head(mPlayersAndGames)
+```
+
+Second component is the matrix for State and initial ranking. As before, 2 interleaving rows are skipped.
+
+```{r player-states-and-ranks}
+mStatesAndRanks <- m[seq(2, length(m), 3)]
+head(mStatesAndRanks)
+```
+
+At this point we have the necessary components to generate player id, name, state, total points, and initial ranking.
+
+```{r}
+p_id <- as.integer(str_extract(mPlayersAndGames, '\\d+'))
+p_name <- str_extract(mPlayersAndGames, "[A-Z]+.[A-Z]+")
+p_state <- str_extract(mStatesAndRanks, "[A-Z][A-Z]")
+p_total_points <- as.numeric(str_extract(mPlayersAndGames, "[0-9]+\\.[0-9]"))
+p_init_rank <- as.numeric(str_remove(str_extract(mStatesAndRanks, "R:[ ]+[0-9]{1,}"), "R:[ ]+"))
+```
+
+We observe that some games do not contain the id of the oppositng player. For example, for games 6 and 7 played by Thomas there is no id of the opposing player. This is true for games with status in [HUBX].
+
+```{r}
+mPlayersAndGames[63]
+```
+
+Since missing opposing player ids may cause issues downstream, let's replace missing opposing player ids with 0. Note, the  delimiter may be any white space character.  
+
+We observe that the missing values have been filled in with 0.
+
+```{r}
+mPlayersAndGames <- str_replace_all(mPlayersAndGames, "\\|([HUBX])([ \t\f\n])+", "|\\1\\2  0")
+mPlayersAndGames[63]
+```
+
+Now we extract all opposing player ids.
+
+```{r}
+p_opponent_ids <- as.integer(str_remove(unlist(str_extract_all(mPlayersAndGames, "[A-Z][ ]+[0-9]+")), "[A-Z][ ]+"))
+p_opponent_ids
+
+#as.integer(str_remove(unlist(str_extract_all(mPlayersAndGames, "[A-Z][ ]+[0-9]+")), "[WLD][ ]+"))
+#p_opponents <- split(v, cut(seq_along(v), length(p_name), labels = FALSE))
+```
+
+Let's slice the opposing player ids into chunks of 7, one chunk per player. The index into the resulting list is the plaer id. For example, since the player id for ADITYA BAJAJ* is 3 his opponents will be found at index 3.
+
+```{r}
+p_opponents <- split(p_opponent_ids,             # Applying split() function
+                cut(seq_along(p_opponent_ids),
+                length(mPlayers),
+                labels = FALSE))
+mPlayersAndGames[3]
+p_opponents[3]
+```
+
+For ease of use, combine the vectors into a data frame. A visual inspection against the input data validates the transformations.
+
+```{r}
+df <- data.frame(p_id, p_name, p_state, p_total_points, p_init_rank, p_opponents)
+head(df)
+```
