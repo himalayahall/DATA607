@@ -175,7 +175,7 @@ dbClearResult(rs)     # Clear results cache
 ```
 
 ## Load Ratings Data
-Finally, load RATINGS.  Since the database schema is normalized, join FRIENDS, MOVIES, and RATINGS tables to load aggregate ratings data.
+Finally, load RATINGS. Since the database schema is normalized, join FRIENDS, MOVIES, and RATINGS tables to load aggregate ratings data.
 
 ```{r load-ratings}
 qry <- 'SELECT f.FIRST_NAME, f.LAST_NAME, m.TITLE, r.RATING 
