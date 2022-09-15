@@ -21,11 +21,8 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r warning=FALSE}
 library(tidyverse)
 ```
 
@@ -33,139 +30,169 @@ library(tidyverse)
 
 ## Read tournament data
 
+Read input data. Since we will be extracting rows/columns we can convert to matrix format for easier downstream processing.
+
 ```{r}
-input_data <- read.csv("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project1/tournamentinfo.txt")
+input_matrix <- read.csv("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project1/tournamentinfo.txt")
+input_matrix <- matrix(unlist(input_matrix))
 ```
 
 ## Data preparation
 
-To make it easier to work with this data let's *unlist* and convert to matrix format.
-
-```{r}
-input_matrix <- matrix(unlist(input_data))
-```
-
-Looking at the *head* of the input data we notice that the first 3 rows are header rows and don't contain player info.
+Looking at the *head* of the input data we notice the first 3 rows are header rows and don't contain player info.
 
 ```{r}
 head(input_matrix, n = 10)
 ```
 
-Let's skip over the first 3 rows.
+Skip first 3 header rows.
 
 ```{r skip-header-rows}
 input_matrix <- input_matrix[-1:-3]
 ```
 
-Next observation is that data for a player is provided in 2 separate rows. First row gives the name of player and games played by them. The second row gives the State and starting rank. For any given player the two rows appear consecutively, followed by a deshed separator line.   
+Data for a player is provided on 2 rows. First row gives the name of player and games played by them. The second row gives the State and initial rank. For any given player the two rows appear consecutively, followed by a dashed separator line.    
 
 Using this observation, we split the input matrix into 2 components.  
 
-For the 1^st^ component, player name and games played by them, we start at 1 and scoop up every 3^rd^ row from the input matrix (skipping over the player state/rank and separator line).
+The 1^st^ component will contain player name, total number of points, and games played by them. We can extract this data by starting at row 1 and scooping up every 3^rd^ row from the input matrix (skipping over state/rank and separator line).
 
 ```{r players-and-games}
 mPlayersAndGames <- input_matrix[seq(1, length(input_matrix), 3)]
 head(mPlayersAndGames, n = 10)
 ```
 
-For the 2^nd^ component, player State and initial ranking, we start at 2 and scoop up every 3^rd^ row from the input matrix (skipping over the player name and separator line).
+The 2^nd^ component will contain player State and pre-rating. We can extract this data by starting at row 2 and again scooping up every 3^rd^ row from the input matrix (skipping over the player name and separator line).
 
 ```{r player-states-and-ranks}
 mStatesAndRanks <- input_matrix[seq(2, length(input_matrix), 3)]
-head(mStatesAndRanks)
+head(mStatesAndRanks, n = 10)
 ```
 
 ## Generate static player data
 
-At this point we have the necessary components to generate all static data - player id, name, state, total points, and initial ranking.
+At this point we have the necessary components to generate static player data - player id, name, state, total points, and pre-rating. 
 
 ```{r}
 player_id <- as.integer(str_extract(mPlayersAndGames, '\\d+'))
-length(player_id)
 
-player_name <- str_extract(mPlayersAndGames, "[A-Z]+.[A-Z]+")
-length(player_name)
+player_name <- str_trim(str_extract(mPlayersAndGames, "[A-Z][^\\|]+")) # assume names start with a letter
 
-player_state <- str_extract(mStatesAndRanks, "[A-Z][A-Z]")
-length(player_state)
+player_state <- str_extract(mStatesAndRanks, "[A-Z][A-Z]")             # assume 2-letter abbreviation for State
 
 player_total_points <- as.numeric(str_extract(mPlayersAndGames, "[0-9]+\\.[0-9]"))
-length(player_total_points)
 
-player_init_rank <- as.numeric(str_remove(str_extract(mStatesAndRanks, "R:[ ]+[0-9]{1,}"), "R:[ ]+"))
-length(player_init_rank)
+player_pre_rating <- as.numeric(str_remove(str_extract(mStatesAndRanks, "R:[ ]+[0-9]{1,}"), "R:[ ]+"))
 ```
 
-## Data preparation for computing average opponent ranking
+It's a good idea to spot check our static data by comparing it with the original. Let's print some values from both original and static data to compare visually. Player SOFIA ADINA STANESCU-BELLU has 3.5 total points and 1507 initial rank in original and sanity check. Checks pass for other players as wel so we are good to go!
 
-We also observe that some games do not contain the id of the opposing player. For example, there is no id of the opposing player for games 6 and 7 played by JULIA Similarly, only game 1 has opposing player id for ASHWIN.  
+```{r sanity-check}
+sanity_check <- data.frame(
+                    player_name[seq(4, length(mPlayersAndGames) / 2, 4)],
+                    player_total_points[seq(4, length(mPlayersAndGames) / 2, 4)],
+                    player_pre_rating[seq(4, length(mPlayersAndGames) / 2, 4)]
+)
+
+colnames(sanity_check) <- c('name', 'total_points', 'init_rank')
+
+sanity_check
+
+mPlayersAndGames[seq(4, length(mPlayersAndGames) / 2, 4)]
+
+mStatesAndRanks[seq(4, length(mStatesAndRanks) / 2, 4)]
+```
+
+## Missing opponent id
+
+We observe that some games do not contain the id of the opposing player. For example, there is no id of the opposing player for games 6 and 7 played by JULIA Similarly, only game 1 has opposing player id for ASHWIN.  
 
 ```{r}
 mPlayersAndGames[60]
+
 mPlayersAndGames[62]
 ```
 
 Visual inspection of the full data shows missing player id for games with codes [H, U, B, X].  
 
-To make downstream processing more robust let's repair missing opposing player ids with 0. After the transformation we observe that the missing values have been filled in with 0.
+To make downstream processing more robust let's repair missing opposing player ids with 0. After the transformation we observe that missing values have been replaced by NA.
 
 ```{r}
-mPlayersAndGames <- str_replace_all(mPlayersAndGames, "\\|([HUBX])([ \t\f\n])+", "|\\1\\2  0")
+mPlayersAndGames <- str_replace_all(mPlayersAndGames, "\\|([HUBX])([ \t\f\n])+", "|\\1\\2 \\N\\A")
+
 mPlayersAndGames[60]
+
 mPlayersAndGames[62]
 ```
+
+## Data preparation for computing average opponent ranking
 
 Now we extract all opposing player ids into a flattened list. Notice there are exactly 64 * 7 ids since we made sure that missing ids were replaced by 0. 
 
 ```{r}
-p_opponent_ids <- as.integer(str_remove(unlist(str_extract_all(mPlayersAndGames, "[A-Z][ ]+[0-9]+")), "[A-Z][ ]+"))
+p_opponent_ids <- as.integer(str_remove(unlist(str_extract_all(mPlayersAndGames, "[A-Z][ ]+([0-9]+|NA)")), "[A-Z][ ]+"))
 length(p_opponent_ids) == 64 * 7
 ```
 
 Scores for exactly 7 games were reported for each player. So we can split opposing player ids into partitions of 7 each.  
 
-Index into the resulting list is the player id! For example, player id for ADITYA BAJAJ is 3, so ids of ADITYA's opponents are to be found at index 3.
+Index into the resulting list is the player id! For example, ADITYA BAJAJ has player id 3, so ids of ADITYA's opponents are to be found at index 3.
 
 ```{r}
 p_opponents <- split(p_opponent_ids,             # Applying split() function
                      cut(seq_along(p_opponent_ids),
                     length(mPlayersAndGames),
                     labels = FALSE))
-mPlayersAndGames[3]
-p_opponents[3]
 
+mPlayersAndGames[3]
+
+p_opponents[3]
 ```
 
 ## Calculate average rank of opponents for all players
 
 Now we are ready to calculate the average rank of opponents for each player.
 
+* Count the number of opponents, ignoring NA opponent id
+* Sum the ranks of all opponents 
+* Compute average opponent rank
+
 ```{r calculate-avg-opponent-score}
-player_avg_score <- numeric(length(p_opponents)) # init results vector
-cp_curr_id <- 1                                       # current player id
-for (opponents in p_opponents)                   # loop over all opponent splits
-{
-    cp_op_count <- 0                               # init count of opponents for current player
-    cp_sum_op_rank <- 0                            # init sum of opposing player ranks
-    for (ops_id in opponents) {                    # loop over all opponent
-            if (ops_id > 0) {                      # skip missing opponent ids 
-                cp_op_count <- cp_op_count + 1     # inc opponent count
-                cp_sum_op_rank <- cp_sum_op_rank + player_init_rank[ops_id] # sum opposing player rank
-            }
-    }
-    
-    if (cp_op_count > 0) {
-        avg_score <- round(cp_sum_op_rank / cp_op_count, 0)  # compute avg rank of opposing players
-    }
-    else {
-        avg_score = 0
-    }
-    
-    player_avg_score[cp_curr_id] <- avg_score      # store avg rang
-    
-    cp_curr_id <- cp_curr_id + 1                   # inc current player id
-}
-player_avg_score
+opp_count <- map(p_opponents, function(x) sum(!is.na(x)))
+
+opp_rank_sum <- map(p_opponents, function(x) sum(player_pre_rating[x], na.rm = TRUE))
+
+player_avg_score <- map2(opp_rank_sum, opp_count, ~ round(.x / .y, 0))
+```
+
+This was my initial attempt to compute average rank. Worked but not very elegant!
+
+```{r}
+# player_avg_score <- numeric(length(p_opponents)) # init results vector
+# cp_curr_id <- 1                                  # current player id
+# for (opponents in p_opponents)                   # loop over all opponent splits
+# {
+#     cp_op_count <- 0                               # init count of opponents for current player
+#     cp_sum_op_rank <- 0                            # init sum of opposing player ranks
+#     for (ops_id in opponents) {                    # loop over all opponent
+#             if (ops_id > 0) {                      # skip missing opponent ids 
+#                 cp_op_count <- cp_op_count + 1     # inc opponent count
+#                 cp_sum_op_rank <- cp_sum_op_rank + player_pre_rating[ops_id] # sum opposing player rank
+#             }
+#     }
+#     
+#     if (cp_op_count > 0) {
+#         avg_score <- round(cp_sum_op_rank / cp_op_count, 0)  # compute avg rank of opposing players
+#     }
+#     else {
+#         avg_score = 0
+#     }
+#     
+#     player_avg_score[cp_curr_id] <- avg_score      # store avg rang
+#     
+#     cp_curr_id <- cp_curr_id + 1                   # inc current player id
+# }
+# player_avg_score
 ```
 
 ## Create result data frame
@@ -173,22 +200,34 @@ player_avg_score
 Now let's warp all computed attributes into a data frame.
 
 ```{r create-data-frame}
-df <- data.frame(player_id, player_name, player_state, player_init_rank, player_total_points, player_avg_score)
-colnames(df) <- c('ID', 'Name', 'State', 'Initial_Rank', 'Total_Points', 'Avg_Opponent_Pre_Rating')
+player_avg_score <- unlist(player_avg_score) # unlist
+
+df <- data.frame(player_id,                  # create data.frame
+                 player_name, 
+                 player_state, 
+                 player_total_points, 
+                 player_pre_rating, 
+                 player_avg_score) 
+
+colnames(df) <- c('id',                      # change column names
+                  'name', 
+                  'state', 
+                  'tot_points', 
+                  'pre_rating', 
+                  'avg_opponent_pre_rating')
 ```
 
 Lets take a look at the final results.
 
 ```{r}
-df
+head(df, n = 10)
 ```
 
 ## Generate output CSV
 
-Now we can generate the output CSV file in the current working directory. No need to generate row names since player ids are more than adequate.
+Now we can generate the output CSV file in current working directory. No need to generate row names, player ids already start at 1 and increase in increments of 1.
 
 ```{r generate-csv}
 write.csv(df, "player_analysis.csv", row.names = FALSE)
-
 ```
 
