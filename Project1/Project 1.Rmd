@@ -2,7 +2,23 @@
 title: "Project 1"
 author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+     
+  pdf_document: 
+    toc: true
+    toc_depth: 3
+    number_sections: true
+  html_document:
+    
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+boxlinks: true
+urlcolor: blue
+always_allow_html: true
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -24,88 +40,126 @@ input_data <- read.csv("tournamentinfo.txt")
 To make it easier to work with this data let's *unlist* and convert to matrix format.
 
 ```{r}
-m <- matrix(unlist(input_data))
+input_matrix <- matrix(unlist(input_data))
 ```
 
-Looking at the *head* of the input data we notice that the first 4 rows iare header rows and do not contain player info.
+Looking at the *head* of the input data we notice that the first 3 rows are header rows and don't contain player info.
 
 ```{r}
-head(m)
+head(input_matrix, n = 10)
 ```
 
 Let's skip over the first 3 rows.
 
 ```{r skip-header-rows}
-m <- m[seq(4, length(m))]
+input_matrix <- input_matrix[-1:-3]
 ```
 
-Next observation is that player data is provided on 2 different rows. One row provides the name of the player and games played by them. The other row provides the player's State and starting rank. For any given player the two rows appear consecutively, followed by a separator line of dashes *--*. 
+Next observation is that data for a player is provided on 2 different rows. First row gives the name of player and games played by them. The second row gives the player's State and starting rank. For any given player the two rows appear consecutively, followed by a separator line of dashes *--*. 
 
-Using this observation, we split the matrix into 2 components.  
+Using this observation, we split the input matrix into 2 components.  
 
-First component is the matrix of player names and games played. Notice that we scoop up every 3^rd^ row, skipping over the player state/rank and the separator line.
+For the 1^st^ component, player name and games played by them, we start at 1 and scoop up every 3^rd^ row from the input matrix (skipping over the player state/rank and separator line).
 
 ```{r players-and-games}
-mPlayersAndGames <- m[seq(1, length(m), 3)]
-head(mPlayersAndGames)
+mPlayersAndGames <- input_matrix[seq(1, length(input_matrix), 3)]
+head(mPlayersAndGames, n = 10)
 ```
 
-Second component is the matrix for State and initial ranking. As before, 2 interleaving rows are skipped.
+For the 2^nd^ component, player State and initial ranking, we start at 2 and scoop up every 3^rd^ row from the input matrix (skipping over the player name and separator line).
 
 ```{r player-states-and-ranks}
 mStatesAndRanks <- m[seq(2, length(m), 3)]
 head(mStatesAndRanks)
 ```
 
-At this point we have the necessary components to generate player id, name, state, total points, and initial ranking.
+At this point we have the necessary components to generate most of the static data - player id, name, state, total points, and initial ranking.
 
 ```{r}
-p_id <- as.integer(str_extract(mPlayersAndGames, '\\d+'))
-p_name <- str_extract(mPlayersAndGames, "[A-Z]+.[A-Z]+")
-p_state <- str_extract(mStatesAndRanks, "[A-Z][A-Z]")
-p_total_points <- as.numeric(str_extract(mPlayersAndGames, "[0-9]+\\.[0-9]"))
-p_init_rank <- as.numeric(str_remove(str_extract(mStatesAndRanks, "R:[ ]+[0-9]{1,}"), "R:[ ]+"))
+player_id <- as.integer(str_extract(mPlayersAndGames, '\\d+'))
+length(player_id)
+
+player_name <- str_extract(mPlayersAndGames, "[A-Z]+.[A-Z]+")
+length(player_name)
+
+player_state <- str_extract(mStatesAndRanks, "[A-Z][A-Z]")
+length(player_state)
+
+player_total_points <- as.numeric(str_extract(mPlayersAndGames, "[0-9]+\\.[0-9]"))
+length(player_total_points)
+
+player_init_rank <- as.numeric(str_remove(str_extract(mStatesAndRanks, "R:[ ]+[0-9]{1,}"), "R:[ ]+"))
+length(player_init_rank)
+
 ```
 
-We observe that some games do not contain the id of the oppositng player. For example, for games 6 and 7 played by Thomas there is no id of the opposing player. This is true for games with status in [HUBX].
+We can also observe that some games do not contain the id of the opposing player. For example, there is no id of the opposing player for games 6 and 7 played by THOMAS. Similarly, only game 1 has opposing player id for ASHWIN.  
 
 ```{r}
-mPlayersAndGames[63]
+mPlayersAndGames[60:65]
 ```
 
-Since missing opposing player ids may cause issues downstream, let's replace missing opposing player ids with 0. Note, the  delimiter may be any white space character.  
+A visual inspection of the full data shows missing player id for games with codes [H, U, B, X]. To make downstream processing more robust let's repair missing opposing player ids with 0. 
 
-We observe that the missing values have been filled in with 0.
+After the transformation we observe that the missing values have been filled in with 0.
 
 ```{r}
 mPlayersAndGames <- str_replace_all(mPlayersAndGames, "\\|([HUBX])([ \t\f\n])+", "|\\1\\2  0")
-mPlayersAndGames[63]
+mPlayersAndGames[60:65]
 ```
 
-Now we extract all opposing player ids.
+Now we extract all opposing player ids into a flattened list. Notice there are exactly 64 * 7 ids since we made sure that missing ids were replaced by 0. 
 
 ```{r}
 p_opponent_ids <- as.integer(str_remove(unlist(str_extract_all(mPlayersAndGames, "[A-Z][ ]+[0-9]+")), "[A-Z][ ]+"))
-p_opponent_ids
-
-#as.integer(str_remove(unlist(str_extract_all(mPlayersAndGames, "[A-Z][ ]+[0-9]+")), "[WLD][ ]+"))
-#p_opponents <- split(v, cut(seq_along(v), length(p_name), labels = FALSE))
+length(p_opponent_ids) == 64 * 7
 ```
 
-Let's slice the opposing player ids into chunks of 7, one chunk per player. The index into the resulting list is the plaer id. For example, since the player id for ADITYA BAJAJ* is 3 his opponents will be found at index 3.
+For each player, scores for exactly 7 games were reported. We split opposing player ids into partitions of 7 each.  
+
+Index into the resulting list is the player id. For example, since the player id for ADITYA BAJAJ is 3, ids of ADITYA's opponents are found at index 3.
 
 ```{r}
 p_opponents <- split(p_opponent_ids,             # Applying split() function
                 cut(seq_along(p_opponent_ids),
-                length(mPlayers),
-                labels = FALSE))
+                    length(mPlayers),
+                    labels = FALSE))
 mPlayersAndGames[3]
 p_opponents[3]
+
 ```
 
-For ease of use, combine the vectors into a data frame. A visual inspection against the input data validates the transformations.
 
 ```{r}
-df <- data.frame(p_id, p_name, p_state, p_total_points, p_init_rank, p_opponents)
-head(df)
+
 ```
+
+Now we calculate the average rank of opponents for each player.
+
+```{r calculate-avg-opponent-score}
+p_avg_score <- numeric(length(p_opponents))                      # init results vector
+player_id <- 1                                                   # current player id
+for (opponents in p_opponents)                                   # loop over all opponent splits
+{
+    op_count <- 0                                                # init count of opponents for current player
+    sum_op_rank <- 0                                             # init sum of opposing player ranks for current player
+    for (ops_id in opponents) {                                  # loop over all opponents for current player
+            if (ops_id > 0) {                                    # skip over missing opponent ids 
+                op_count <- op_count + 1                         # inc opponent count
+                sum_op_rank <- sum_op_rank + p_init_rank[ops_id] # sum opposing player rank
+            }
+    }
+    avg_score <- round(sum_op_rank / op_count, 0)                # compute avg rank of opposing players
+    p_avg_score[player_id] <- avg_score                          # store avg rang
+    player_id <- player_id + 1                                   # inc current player id
+}
+p_avg_score
+```
+
+Now let's warp all computed attributes into a data frame.
+
+```{r create-data-frame}
+df <- data.frame(p_id, p_name, p_state, p_init_rank, p_total_points, p_avg_score)
+colnames(df) <- c('ID', 'Name', 'State', 'Initial_Rank', 'Total_Points', 'Opponent Avg Score')
+```
+
