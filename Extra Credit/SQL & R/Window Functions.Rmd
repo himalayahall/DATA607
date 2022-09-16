@@ -2,9 +2,7 @@
 title: "SQL & R - Extra Credit"
 author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
-output:
-  pdf_document: default
-  html_document: default
+output: html_document
 ---
 
 ```{r setup, include=FALSE, warning=FALSE}
@@ -112,3 +110,4 @@ head(rows)
 ```
 # Conclusion
 This concludes a basic exploration of SQL Window Functions. They are a powerful tool and data scientists should be familiar with them.
+
