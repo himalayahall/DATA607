@@ -53,7 +53,11 @@ num_ds <- ds %>%
 num_ds
 ```
 
-## Mean Movie Rating
+# Contruct Global Baseline model
+
+The Global Baseline sheet in input XLSX  shows the model that is necessary for  make predictions. Let's build this model one piece at a time (as Johnny Cash would say).
+
+## Compute mean movie rating
 
 Now let's compute the mean movie rating. Sum of all ratings is 240 and count of valid ratings (excluding NA) is 61. Mean of all movie ratings is 3.93.
 
@@ -63,14 +67,14 @@ all_rat <- unlist(num_ds, use.names = FALSE)    # extract all movie ratings
 sum_rating <- sum(all_rat, na.rm = TRUE)        # sum all ratings
 sum_rating
 
-count_rating <- length(na.exclude(all_rat))     # count number of ratings, excluding NAs
+count_rating <- length(na.exclude(all_rat))     # count number of ratings, excluding NA
 count_rating
 
-mean_movie <- round(sum_rating / count_rating, 2) # compute mean movie ratings
+mean_movie <- round(sum_rating / count_rating, 2) # compute mean movie rating
 mean_movie
 ```
 
-## Movie Average
+## Compute movie averages
 
 Compute (movie) averages of all numeric columns.
 
@@ -107,65 +111,69 @@ num_ds <- num_ds %>%
 head(num_ds)
 ```
 
-Extract *critics* from original data source.
+Extract *critics* and *movies* from original data source.
 
 ```{r}
-critics <- ds %>%
-            select('Critic')
-critics <- unlist(critics, use.names = FALSE)
+critics <- unlist(ds[, 'Critic'], use.names = FALSE)
 critics
+
+movies <- colnames(ds)
+movies <- movies[-1]
+movies
 ```
 
 Add *movie avg* and *movie avg - mean movie* as rows to critics.
 
 ```{r}
-critics <- append(critics, 'movie avg')
+critics_expanded <- append(critics, 'movie avg')
 
-critics <- append(critics, 'movie avg - mean movie')
+critics_expanded <- append(critics_expanded, 'movie avg - mean movie')
 
-tail(critics)
+critics_expanded
 ```
 
-Add *critics* columns back into data source.
+Add expanded *critics* columns back into data source. This data frame should be identical in all important aspects to the *Global Baseline* sheet in input XSLX. 
 
-```{r}
-num_ds <- add_column(num_ds, critics, .before = 0)
-num_ds
+```{r assemble-global-baseline}
+global_baseline <- add_column(num_ds, 'Critic' = critics_expanded, .before = 0)
+global_baseline
 ```
 
-Define function to predict movie rating for any given movie and critic pair. Handle basic error cases of invalid movie or critic names.
+# Predictions
 
-```{r}
+Now that we have our Global Baseline model, let's define a  function that predicts the movie rating for any pair of movie and critic.
+
+```{r prediction-function}
 me.predictRating <- function(movie, critic) {
-                        if (! movie %in% colnames(num_ds)) {
-                            print(paste("Error - nvalid movie:", movie))
-                            NA
-                        }
-                        else if (! critic %in% num_ds$critics) {
-                            print(paste("Error -  critic:", critic))
-                            NA
-                        }
-                        else {
-                            mean_movie +
-                            num_ds[num_ds$critics == 'movie avg - mean movie', movie][[1]] +  
-                            num_ds[num_ds$critics == critic, 'UserAvgMinusMeanMovie'][[1]]
-                        }
+            if (! movie %in% colnames(global_baseline)) {     
+                print(paste("Error - invalid movie:", movie))
+                NA
+            }
+            else if (! critic %in% critics) {
+                print(paste("Error -  critic:", critic))
+                NA
+            }
+            else {                                            
+                mean_movie +
+                global_baseline[global_baseline$Critic == 'movie avg - mean movie', movie][[1]] +  
+                global_baseline[global_baseline$Critic == critic, 'UserAvgMinusMeanMovie'][[1]]
+            }
 }
 ```
 
-## Test
+## Test predictions
 
-Test predictions.
+Sanity check a few predictions. Note, movie prediction for *Param: PitchPerfect2* matches the prediction in the *Global Baseline* sheet in input XSLX.
 
-```{r}
-test_data <- c('PitchPerfect2', 'Param', 'Deadpool', 'Parshu', 'JungleBook', 'Vuthy', 'Frozen', 'Dan2', 'Frozen', 'Dan', 'CaptainAmerica', 'Steve', "JungleBook", "Nathan")
+```{r test-predictions}
+test_data <- c('PitchPerfect2', 'Param', 'CaptainAmerica', 'Burton', 'JungleBook', 'Vuthy', 'Frozen', 'Steve')
 
 for (i in seq(1, length(test_data), 2)) {
-                        if (! test_data[i] %in% colnames(num_ds)) {
-                            print(paste("Error - invalid movie:", test_data[i]))
+                        if (! test_data[i] %in% colnames(global_baseline)) {
+                            print(paste("*Error - invalid movie:", test_data[i]))
                         }
-                        else if (! test_data[i + 1] %in% num_ds$critics) {
-                            print(paste("Error - invalid critic:", test_data[i + 1]))
+                        else if (! test_data[i + 1] %in% critics) {
+                            print(paste("*Error - invalid critic:", test_data[i + 1]))
                         }
                         else {
                             print(
@@ -173,8 +181,39 @@ for (i in seq(1, length(test_data), 2)) {
                                 "Rating for movie", test_data[i], "by critic", test_data[i + 1], "- Predicted:", 
                                 me.predictRating(test_data[i], test_data[i + 1]), 
                                 ", Actual:", 
-                                num_ds[num_ds$critics == test_data[i + 1], test_data[i]]))
+                                global_baseline[global_baseline$Critic == test_data[i + 1], test_data[i]]))
                         }
 }
+```
+
+## Predict rating for all unrated movies
+
+Let's make rating predictions for all unrated movies.
+
+```{r predict-rating-for-all-unrated}
+c <- as.character(c()) # critics
+m <- as.character(c()) # movies
+r <- as.numeric(c())   # predictions
+
+for (critic in critics) {
+    for (movie in movies) {
+        if (is.na(global_baseline[global_baseline$Critic == critic, movie][[1]])) {
+            m <- append(m, movie)
+            c <- append(c, critic)
+            r <- append(r, me.predictRating(movie, critic))
+        }
+    }
+}
+predictions <- data.frame('Critic' = c, 'Movie' = m, 'Predicted Rating' = r)
+predictions <- predictions %>%
+    group_by(Critic)
+```
+
+## Output movie predictions
+
+Display all predictions.
+
+```{r display-predictions}
+print(predictions, n = nrow(predictions))
 ```
 
