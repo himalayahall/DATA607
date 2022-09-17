@@ -14,6 +14,7 @@ output:
     theme: cerulean
     toc: true
     toc_float: true
+urlcolor: blue
 editor_options: 
   chunk_output_type: console
 ---
@@ -32,7 +33,7 @@ There needs to be at least one respondent with at least two unrated items. You m
 
 # Data
 
-Assumes the input XLSX has been installed in the current working directory.  
+Assumes the input file *MovieRatings.xlsx* has been downloaded from [github](https://github.com/himalayahall/DATA607/tree/main/Extra%20Credit/Global%20Baseline%20Estimate) and installed in the current working directory.  
 
 Let's find out names of sheets in the XLSX file. The sheet we want to load is *MovieRatings*. 
 
