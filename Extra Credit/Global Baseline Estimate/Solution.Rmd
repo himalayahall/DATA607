@@ -35,16 +35,18 @@ There needs to be at least one respondent with at least two unrated items. You m
 
 Assumes the input file *MovieRatings.xlsx* has been downloaded from [github](https://github.com/himalayahall/DATA607/tree/main/Extra%20Credit/Global%20Baseline%20Estimate) and installed in the current working directory.  
 
-Let's find out names of sheets in the XLSX file. The sheet we want to load is *MovieRatings*. 
+Let's look at the data sheets. There are 2 input data sheets: *MovieRatings* contains the sample data provided with the assignment and *MyMovieRatings* contains the actual survey data.
 
 ```{r find-sheet-names}
 readxl::excel_sheets("MovieRatings.xlsx")
 ```
 
-Let's load *MovieRatings* sheet from XLSX file.
+Load *MovieRatings* sheet to reproduce model *Global Baseline*  provided with the assignment. Otherwise, to reproduce *My Global Baseline*, load *MyMovieRatings*.  
+
+Here we load *MyMovieRatings*.
 
 ```{r load-data}
-ds <- readxl::read_excel("MovieRatings.xlsx", sheet = "MovieRatings")
+ds <- readxl::read_excel("MovieRatings.xlsx", sheet = "MyMovieRatings")
 str(ds)
 ```
 
@@ -54,23 +56,30 @@ Let's remove the *Critic* column from the data frame. Doing so has the advantage
 num_ds <- ds %>%
     select(-Critic)
 num_ds
+
+num_ds <- num_ds %>%
+             mutate_if(is.numeric, function(x) ifelse(x == 0, NA, x))
+num_ds
 ```
 
 # Contruct Global Baseline model
 
-The Global Baseline sheet in input XLSX  shows the model that is necessary for  make predictions. Let's build this model one piece at a time (as Johnny Cash would say).
+Global Baseline sheets in input XLSX contain the model that is necessary for making predictions. Model *Global Baseline* is for *MovieRatings* data, *My Global Baseline* is for *MyMovieRatings*. 
+
+Let's build the *My Global Baseline* model one piece at a time (as Johnny Cash would say!).
 
 ## Compute mean movie rating
 
-Now let's compute the mean movie rating. Sum of all ratings is 240 and count of valid ratings (excluding NA) is 61. Mean of all movie ratings is 3.93.
+Now let's compute the mean movie rating. Note, *mean_movie* matches the model value.
 
 ```{r}
 all_rat <- unlist(num_ds, use.names = FALSE)    # extract all movie ratings
+all_rat <- all_rat[!is.na(all_rat)]             # remove NA
 
 sum_rating <- sum(all_rat, na.rm = TRUE)        # sum all ratings
 sum_rating
 
-count_rating <- length(na.exclude(all_rat))     # count number of ratings, excluding NA
+count_rating <- length(all_rat)                 # count number of ratings
 count_rating
 
 mean_movie <- round(sum_rating / count_rating, 2) # compute mean movie rating
@@ -79,7 +88,7 @@ mean_movie
 
 ## Compute movie averages
 
-Compute (movie) averages of all numeric columns.
+Compute (movie) averages of all numeric columns. Note, move averages match the model.
 
 ```{r}
 movie_average <- num_ds %>% 
@@ -87,7 +96,7 @@ movie_average <- num_ds %>%
 movie_average
 ```
 
-Add 2 rows at the end of data frame: 1^st^ row contains movie averages, 2^nd^ row contains the *movie average - mean movie*.
+Add 2 rows at the end of data frame: 1^st^ row contains movie averages, 2^nd^ row contains the *movie average - mean movie*. Note, values of both rows matches the model.
 
 ```{r}
 num_ds <- add_row(num_ds, movie_average)
@@ -101,16 +110,19 @@ Compute and add *user average* as column to data frame.
 
 ```{r}
 num_ds <- num_ds %>%
-            mutate(UserAvg = rowMeans(., na.rm = TRUE)) %>%
-            mutate(UserAvg = round(UserAvg, 1))
-head(num_ds)
+            mutate('user avg' = rowMeans(., na.rm = TRUE)) 
+    
+num_ds <- num_ds %>%
+            mutate('user avg' = round(num_ds$`user avg`, 2)) 
+    
+head(num_ds, n = 10)
 ```
 
 Compute and add *user average - mean movie* as column to data frame.
 
 ```{r}
 num_ds <- num_ds %>%
-            mutate("UserAvgMinusMeanMovie" = round(UserAvg - mean_movie, 2)) 
+            mutate("user avg - mean movie" = round(num_ds$`user avg` - mean_movie, 2)) 
 head(num_ds)
 ```
 
@@ -121,7 +133,7 @@ critics <- unlist(ds[, 'Critic'], use.names = FALSE)
 critics
 
 movies <- colnames(ds)
-movies <- movies[-1]
+movies <- movies[-1]    # remove Critics from movie names
 movies
 ```
 
@@ -135,7 +147,7 @@ critics_expanded <- append(critics_expanded, 'movie avg - mean movie')
 critics_expanded
 ```
 
-Add expanded *critics* columns back into data source. This data frame should be identical in all important aspects to the *Global Baseline* sheet in input XSLX. 
+Add expanded *critics* columns back into data source. This data frame should be identical in all important aspects to the *My Global Baseline* sheet in input XSLX. 
 
 ```{r assemble-global-baseline}
 global_baseline <- add_column(num_ds, 'Critic' = critics_expanded, .before = 0)
@@ -159,7 +171,7 @@ me.predictRating <- function(movie, critic) {
             else {                                            
                 mean_movie +
                 global_baseline[global_baseline$Critic == 'movie avg - mean movie', movie][[1]] +  
-                global_baseline[global_baseline$Critic == critic, 'UserAvgMinusMeanMovie'][[1]]
+                global_baseline[global_baseline$Critic == critic, 'user avg - mean movie'][[1]]
             }
 }
 ```
@@ -169,7 +181,8 @@ me.predictRating <- function(movie, critic) {
 Sanity check a few predictions. Note, movie prediction for *Param: PitchPerfect2* matches the prediction in the *Global Baseline* sheet in input XSLX.
 
 ```{r test-predictions}
-test_data <- c('PitchPerfect2', 'Param', 'CaptainAmerica', 'Burton', 'JungleBook', 'Vuthy', 'Frozen', 'Steve')
+test_data <- c('HOUSE_OF_GUCCI', 'Igor', 'HOUSE_OF_GUCCI', 'Howard', 'CODA', 'Monish', 'OCEANS_8', 'Claudia')
+#test_data <- c('PitchPerfect2', 'Param', 'CaptainAmerica', 'Burton', 'JungleBook', 'Vuthy', 'Frozen', 'Steve')
 
 for (i in seq(1, length(test_data), 2)) {
                         if (! test_data[i] %in% colnames(global_baseline)) {
@@ -191,7 +204,7 @@ for (i in seq(1, length(test_data), 2)) {
 
 ## Predict rating for all unrated movies
 
-Let's make rating predictions for all unrated movies.
+Make rating predictions for all unrated movies.
 
 ```{r predict-rating-for-all-unrated}
 c <- as.character(c()) # critics
@@ -214,7 +227,7 @@ predictions <- predictions %>%
 
 ## Output movie predictions
 
-Display all predictions.
+Display all predictions. Note, OUSE_OF_GUCCI rating prediction for Igor, 4.22, matches the prediction in model.
 
 ```{r display-predictions}
 print(predictions, n = nrow(predictions))
