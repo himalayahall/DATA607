@@ -32,13 +32,15 @@ There needs to be at least one respondent with at least two unrated items. You m
 
 # Data
 
+Assumes the input XLSX has been installed in the current working directory.  
+
 Let's find out names of sheets in the XLSX file. The sheet we want to load is *MovieRatings*. 
 
 ```{r find-sheet-names}
 readxl::excel_sheets("MovieRatings.xlsx")
 ```
 
-Let's load the *MovieRatings* sheet from XLSC file.
+Let's load *MovieRatings* sheet from XLSX file.
 
 ```{r load-data}
 ds <- readxl::read_excel("MovieRatings.xlsx", sheet = "MovieRatings")
