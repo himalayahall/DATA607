@@ -156,7 +156,7 @@ global_baseline
 
 # Predictions
 
-Now that we have our Global Baseline model, let's define a  function that predicts the movie rating for any pair of movie and critic.
+Now that we have our Global Baseline model, let's create a function that predicts the movie rating for any pair of movie and critic.
 
 ```{r prediction-function}
 me.predictRating <- function(movie, critic) {
@@ -178,7 +178,7 @@ me.predictRating <- function(movie, critic) {
 
 ## Test predictions
 
-Sanity check a few predictions. Note, movie prediction for *Param: PitchPerfect2* matches the prediction in the *Global Baseline* sheet in input XSLX.
+Sanity check a few predictions. Note, movie prediction for *Igor: HOUSE_OF_GUCCI* matches the prediction in the *My Global Baseline* sheet in input XSLX.
 
 ```{r test-predictions}
 test_data <- c('HOUSE_OF_GUCCI', 'Igor', 'HOUSE_OF_GUCCI', 'Howard', 'CODA', 'Monish', 'OCEANS_8', 'Claudia')
