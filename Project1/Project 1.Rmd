@@ -24,6 +24,27 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
+# Introduction
+
+In this project, you’re given a text file with chess tournament results where the information has some structure. Your
+job is to create an R Markdown file that generates a .CSV file (that could for example be imported into a SQL database)
+with the following information for all of the players:
+
+    Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponents  
+    
+For the first player, the information would be:
+    
+    Gary Hua, ON, 6.0, 1794, 1605  
+
+1605 was calculated by using the pre-tournament opponents’ ratings of 1436, 1563, 1600, 1610, 1649, 1663, 1716, and
+dividing by the total number of games played.  
+
+If you have questions about the meaning of the data or the results, please post them on the discussion forum. Data
+science, like chess, is a game of back and forth...  
+
+The chess rating system (invented by a Minnesota statistician named Arpad Elo) has been used in many other contexts,
+including assessing relative strength of employment candidates by human resource departments.
+
 # Solution
 
 ## Read tournament data
@@ -231,7 +252,7 @@ opp_avg_prerating <- map2(opp_prerating_sum, # compute player average score
                           ~ round(.x / .y, 0)) 
 ```
 
-Let's validate our transformations. As expected, the count of games with opponent ids for KENNETH J TACK, VIRAJ MOHILE, and ASHWIN BALAJI is 6, 6, and 1, respectively.  
+Let's validate our transformations. As expected, the counst of games with opponent ids for KENNETH J TACK, VIRAJ MOHILE, and ASHWIN BALAJI are 6, 6, and 1, respectively.  
 
 ```{r}
 mPlayersAndGames[kva_idx]
@@ -240,20 +261,23 @@ d <- unlist(opp_count, use.names = FALSE)         # opponent counts
 d[kva_idx]
 ```
 
-Visual inspection shows that for games played by KENNETH, the opponent ids are 42, 33, 5, 38, NA, 1, and 3.
+Let's do a detailed validation of games played by KENNETH. Visual inspection shows that for games played by KENNETH, the opponent ids are 42, 33, 5, 38, 1, and 3. Note, the 5^th^ game was a *bye* and has NA opponent id.
 
 ```{r}
 kenneth_idx <- 12
 mPlayersAndGames[kenneth_idx]
-
 ```
 
-Let's hand compute the sum and average of KENNETH's opponent rank. The sum of opponent pre-ranks is 9037 and the average is 1506.
+Ranks of KENNETH opponents are 1332, 1449, 1655, 1423, 1794, and 1384.
 
 ```{r}
-mPlayersAndGames[kenneth_idx]
-mStatesAndRanks[c(42, 33, 5, 38, 1, 3)]
+kenneth_opponents <- c(42, 33, 5, 38, 1, 3)
+unlist(mStatesAndRanks[kenneth_opponents])
+```
 
+Let's hand compute the sum and average of KENNETH's opponent rank. 
+
+```{r}
 kenneth_sum <- sum(1332, 1449, 1655, 1423, 1794, 1384) # sum of opponent ranks
 kenneth_sum
 
@@ -262,11 +286,11 @@ kenneth_avg
 
 ```
 
-Now, let's make sure the hand computed sum/average matches our transformations. Checks out!
+Now, validate the hand computed sum/average against our transformations. Checks out!
 
 ```{r}
-kenneth_sum == opp_prerating_sum[kenneth_idx]
-kenneth_avg == opp_avg_prerating[kenneth_idx]
+kenneth_sum == opp_prerating_sum[[kenneth_idx]]
+kenneth_avg == opp_avg_prerating[[kenneth_idx]]
 ```
 
 ## Create result data frame
