@@ -3,13 +3,11 @@ title: "Project 1"
 author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
-     
   pdf_document: 
     toc: true
     toc_depth: 3
     number_sections: true
   html_document:
-    
     toc: true
     toc_depth: 3
     toc_float: true
@@ -144,7 +142,7 @@ mPlayersAndGames[kva_idx]
 Dealing with missing data is always problematic. To make downstream processing more robust, let's replace missing opposing player ids with NA. 
 
 ```{r replace-missing-ids}
-mPlayersAndGames <- str_replace_all(mPlayersAndGames, "\\|([HUBXF])([ \t\f\n])+", "|\\1\\2 \\N\\A")
+mPlayersAndGames <- str_replace_all(mPlayersAndGames, "\\|([BHXFU])([ \t\f\n])+", "|\\1\\2 \\N\\A")
 ```
 
 Validate that missing player ids have indeed been replaced with NA.
@@ -184,8 +182,8 @@ p_opponents[aditya_id]       # ADITYA's opponents
 
 Now we are ready to calculate the average rank of opponents for each player.
 
-    * Count the number of opponents, ignoring NA opponent id
-    * Sum the ranks of all opponents 
+    * Sum the ranks of all opponents, ignore NAs
+    * Count the number of opponents, ignoring NAs
     * Compute average opponent rank
 
 ```{r calculate-avg-opponent-score}
