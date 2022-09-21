@@ -3,14 +3,14 @@ title: "Project 1"
 author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
-  pdf_document: 
-    toc: true
-    toc_depth: 3
-    number_sections: true
   html_document:
     toc: true
     toc_depth: 3
     toc_float: true
+    number_sections: true
+  pdf_document: 
+    toc: true
+    toc_depth: 3
     number_sections: true
 boxlinks: true
 urlcolor: blue
@@ -28,29 +28,46 @@ library(tidyverse)
 
 ## Read tournament data
 
-Read input data. Since we will be extracting rows/columns we can convert to matrix format for easier downstream processing.
+Load input data from Github. 
 
 ```{r load-data}
 input_matrix <- read.csv("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project1/tournamentinfo.txt")
-input_matrix <- matrix(unlist(input_matrix))
+head(input_matrix)
 ```
+
 
 ## Data preparation
 
-We notice the first 3 rows are headers and do not contain player info.
+Since we will be extracting rows/columns we can convert to matrix format for easier downstream processing.
+
+```{r}
+input_matrix <- matrix(unlist(input_matrix))
+head(input_matrix)
+```
+
+Let's convert all data to uppercase to ensure  mixed casing in the input will not break downstream processing.
+
+```{r}
+input_matrix <- map(input_matrix, 
+                   function(x) str_to_upper(x))
+```
+
+Observe that first 3 rows are headers and do not contain player info.
 
 ```{r}
 head(input_matrix, n = 10)
 ```
 
-Skip the 3 header rows.
+Using this observation we can skip the 3 header rows.
 
 ```{r skip-header-rows}
 input_matrix <- input_matrix[-1:-3]
 head(input_matrix, n = 6)
 ```
 
-Data for each player is provided on 2 consecutive rows, followed by a dashed separator line. 1^st^ row contains the player name, total points, and games played by them. The 2^nd^ row contains the State and initial rank of the player. Using this observation, let's split the input matrix into 2 components.  
+Our next observation is that data for each player is provided on 2 consecutive rows, followed by a dashed separator line. 1^st^ row contains the player name, total points, and games played by them. The 2^nd^ row contains the State and initial rank of the player.  
+
+Using this observation, let's split the input matrix into 2 components.  
 
 The 1^st^ component will contain player name, total points, and games played. We can extract this data by starting at row 1 and scooping up every 3^rd^ row from the input matrix.  
 
@@ -71,11 +88,14 @@ head(mStatesAndRanks, n = 5)
 At this point we have the necessary components to generate static data for each player - player id, name, state, total points, and pre-rating.  
 
 ```{r}
-player_id <- as.integer(str_extract(mPlayersAndGames, '\\d+'))
+player_id <- as.integer(
+                str_extract(mPlayersAndGames, '\\d+'))
 
-player_name <- str_trim(str_extract(mPlayersAndGames, "[A-Z][^\\|]+")) # assume names start with a letter
+player_name <- str_trim(                        # assume player names start with a letter
+                str_extract(mPlayersAndGames, "[A-Z][^\\|]+")) 
 
-player_state <- str_extract(mStatesAndRanks, "[A-Z][A-Z]")             # assume 2-letter abbreviation for State
+player_state <- str_extract(                    # assume 2-letter abbreviation for State
+                mStatesAndRanks, "[A-Z][A-Z]")  
 
 player_total_points <- as.numeric(str_extract(mPlayersAndGames, "[0-9]+\\.[0-9]"))
 
@@ -154,12 +174,24 @@ mPlayersAndGames[kva_idx]
 
 ## Data preparation for computing average opponent ranking
 
-Now we extract all opposing player ids into a flattened list. Validate there are exactly 64 * 7 ids (64 players, 7 games per player). 
+Extract opposing player ids into a flattened list of integers. 
 
-```{r extract-ids}
-p_opponent_ids <- as.integer(str_remove(unlist(str_extract_all(mPlayersAndGames, "[A-Z][ ]+([0-9]+|NA)")), "[A-Z][ ]+"))
+```{r warning = FALSE}
+p_opponent_ids <- mPlayersAndGames %>% 
+                    str_extract_all("[A-Z][ ]+([0-9]+|NA)") %>%  # extract game result 
+                                                                 # and opponent player id
+                    unlist %>%                          # flatten
+                    str_remove("[A-Z][ ]+") %>%         # extract player id (remove game result)
+                    as.integer()                        # convert player id to integer
+
+```
+
+Validate there are exactly 64 * 7 ids (64 players, 7 games per player).
+
+```{r}
 length(p_opponent_ids) == 64 * 7
 ```
+
 
 We can split opposing player ids into equal sized partitions (7 each). Index into the resulting opponents list is the player id!  
 
@@ -259,8 +291,7 @@ colnames(result_df) <- c('id',              # change column names
                   'avg_opponent_pre_rating')
 ```
 
-Lets take a look at the final results. As final sanity check, notice there is data for 64 players and data for KENNETH matches earlier validations.
-
+Lets take a look at the final results.
 ```{r}
 head(result_df, 5)
 
@@ -269,11 +300,23 @@ NROW(result_df)
 result_df[kva_idx, ]
 ```
 
+As a find sanity check, verify that key data frame values for KENNETH match earlier validations.
+
+```{r}
+opp_avg_prerating[[kenneth_idx]] == result_df[kenneth_idx, "avg_opponent_pre_rating"]
+
+player_pre_rating[kenneth_idx] == result_df[kenneth_idx, "pre_rating"]
+
+result_df[kenneth_idx, ]
+```
+
 ## Generate output CSV
 
 Now we can generate the output CSV file in current working directory.
 
 ```{r generate-csv}
-write.csv(result_df, "player_analysis.csv", row.names = FALSE)  # write csv, skip row names since it's same as player id
+write.csv(result_df,              # data
+          "player_analysis.csv",  # output file name in current working dir
+          row.names = FALSE)      # skip row names since same as player id
 ```
 
