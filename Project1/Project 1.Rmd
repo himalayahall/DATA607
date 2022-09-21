@@ -173,11 +173,11 @@ p_opponents <- split(p_opponent_ids,
                      length(mPlayersAndGames),
                      labels = FALSE))
 
-player_id <- 3               # ADITYA's id
+aditya_id <- 3               # ADITYA's id
 
-mPlayersAndGames[player_id]  # ADITYA's games
+mPlayersAndGames[aditya_id]  # ADITYA's games
 
-p_opponents[player_id]       # ADITYA's opponents
+p_opponents[aditya_id]       # ADITYA's opponents
 ```
 
 ## Calculate average rank of opponents for all players
@@ -232,7 +232,7 @@ kenneth_avg
 
 ```
 
-Let's make sure the hand computed sum/average matches our transformations. It checks out!
+Now, let's make sure the hand computed sum/average matches our transformations. Checks out!
 
 ```{r}
 kenneth_sum == opp_prerating_sum[kenneth_idx]
@@ -246,7 +246,7 @@ Now let's warp all computed attributes into the result data frame.
 ```{r create-data-frame}
 player_opp_avg_prerating <- unlist(opp_avg_prerating, use.names = FALSE) # unlist
 
-result_df <- data.frame(player_id,        # create data.frame
+result_df <- data.frame(player_id,        # create result data.frame
                  player_name, 
                  player_state, 
                  player_total_points, 
@@ -261,19 +261,21 @@ colnames(result_df) <- c('id',              # change column names
                   'avg_opponent_pre_rating')
 ```
 
-Lets take a look at the final results. As final sanity check, notice there is data for 64 players and data for KENNETH matches our earlier validations.
+Lets take a look at the final results. As final sanity check, notice there is data for 64 players and data for KENNETH matches earlier validations.
 
 ```{r}
-head(result_df, n = 5)
+head(result_df, 5)
+
 NROW(result_df)
-result_df[kenneth_idx, ]
+
+result_df[kva_idx, ]
 ```
 
 ## Generate output CSV
 
-Now we can generate the output CSV file in current working directory. No need to generate row names, player ids already start at 1 and increase in increments of 1.
+Now we can generate the output CSV file in current working directory.
 
 ```{r generate-csv}
-write.csv(result_df, "player_analysis.csv", row.names = FALSE)
+write.csv(result_df, "player_analysis.csv", row.names = FALSE)  # write csv, skip row names since it's same as player id
 ```
 
