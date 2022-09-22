@@ -227,7 +227,7 @@ predictions <- predictions %>%
 
 ## Output movie predictions
 
-Display all predictions. Note, OUSE_OF_GUCCI rating prediction for Igor, 4.22, matches the prediction in model.
+Display all predictions. Note, HOUSE_OF_GUCCI rating prediction for Igor, 4.22, matches the prediction in model.
 
 ```{r display-predictions}
 print(predictions, n = nrow(predictions))
