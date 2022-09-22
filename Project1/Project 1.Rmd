@@ -52,38 +52,41 @@ including assessing relative strength of employment candidates by human resource
 Load input data from Github. 
 
 ```{r load-data}
-input_matrix <- read.csv("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project1/tournamentinfo.txt")
-head(input_matrix)
+input_data <- read.csv("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project1/tournamentinfo.txt")
+head(input_data)
 ```
 
 
 ## Data preparation
 
-Since we will be extracting rows/columns we can convert to matrix format for easier downstream processing.
+Unlist for easier downstream processing.
 
 ```{r}
-input_matrix <- matrix(unlist(input_matrix))
-head(input_matrix)
+input_data <- unlist(input_data, use.names = FALSE)
+head(input_data)
 ```
 
-Let's convert all data to uppercase to ensure  mixed casing in the input will not break downstream processing.
+Let's convert all data to uppercase to ensure mixed casing in the input does not break downstream processing.
 
 ```{r}
-input_matrix <- map(input_matrix, 
-                   function(x) str_to_upper(x))
+input_data <- unlist(
+                    map(input_data, 
+                        function(x) 
+                            str_to_upper(x)), 
+                    use.names = FALSE)
 ```
 
 Observe that first 3 rows are headers and don't contain player info.
 
 ```{r}
-head(input_matrix, n = 10)
+head(input_data, n = 10)
 ```
 
 Based on this observation, we skip the 3 header rows.
 
 ```{r skip-header-rows}
-input_matrix <- input_matrix[-1:-3]
-head(input_matrix, n = 6)
+input_data <- input_data[-1:-3]
+head(input_data, n = 6)
 ```
 
 Our next observation is that data for each player is provided on 2 consecutive rows, followed by a dashed separator line. 1^st^ row contains the player name, total points, and games played. The 2^nd^ row contains the State and initial rank.  
@@ -93,7 +96,7 @@ Based on this observation, let's split the input matrix into 2 components.
 The 1^st^ component will contain player name, total points, and games played. We can extract this data by scooping up every 3^rd^ row from the input matrix, starting at row 1 .  
 
 ```{r extract-players-and-games}
-mPlayersAndGames <- unlist(input_matrix[seq(1, length(input_matrix), 3)], use.names = FALSE)
+mPlayersAndGames <- unlist(input_data[seq(1, length(input_data), 3)], use.names = FALSE)
 ```
 
 A quick look shows we have extracted data correctly.
@@ -105,7 +108,7 @@ mPlayersAndGames[1:5]
 The 2^nd^ component will contain player State and pre-rating. This time we start at row 2 and scooping up every 3^rd^ row from the input matrix.
 
 ```{r extract-states-and-ranks}
-mStatesAndRanks <- unlist(input_matrix[seq(2, length(input_matrix), 3)], use.names = FALSE)
+mStatesAndRanks <- unlist(input_data[seq(2, length(input_data), 3)], use.names = FALSE)
 ```
 
 Once again, a quick look shows data has been extracted correctly.
