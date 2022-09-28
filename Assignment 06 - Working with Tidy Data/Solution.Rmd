@@ -45,7 +45,7 @@ descriptions of your data cleanup work, analysis, and conclusions.
 Let's load a CSV file containing the data and format described above.
 
 ```{r load-data}
-df <- read.csv("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%2006%20-%20Working%20eith%20Tidy%20Data/airline_delays.csv")
+df <- read.csv("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%2006%20-%20Working%20with%20Tidy%20Data/airline_delays.csv")
 ```
 
 A quick look at the data frame structure shows that the CSV contains two unnamed columns, which have been labeled X and X.1 in the data frame.
@@ -57,7 +57,8 @@ str(df)
 Let's rename these columns as *airline* and *arrival_status*, respectively.
 
 ```{r rename-cols}
-df <- df %>% rename('airline' = 1, 'arrival_status' = 2)
+df <- df %>% 
+    rename('airline' = 1, 'arrival_status' = 2)
 str(df)
 ```
 
@@ -80,8 +81,8 @@ Lastly, let's fill in the airline name on **delayed** rows: replace empty **airl
 
 ```{r}
 df <- df %>%
-        mutate(airline = ifelse(airline == "", NA, airline)) %>%
-        fill(airline, .direction = "down") # fill in missing values
+        mutate(airline = ifelse(airline == "", NA, airline)) %>% # replace empty with NA
+        fill(airline, .direction = "down")                       # fill in missing values
 head(df)
 ```
 
@@ -89,9 +90,9 @@ Next, we observe that data frame in a **wide** format. Specifically, destination
 
 ```{r pivot-longer}
 df <- df %>%
-            pivot_longer(!c("airline", "arrival_status"), # pivot all cols EXCEPT airline and arrival_status
-                        names_to = "dest",                # destination names 
-                        values_to = "delay_count")              # destination late flight values
+        pivot_longer(!c("airline", "arrival_status"), # pivot cols EXCEPT airline, arrival_status
+                     names_to = "dest",               # col with destination names 
+                     values_to = "delay_count")       # col with late flight values
 head(df)
 ```
 
@@ -106,7 +107,7 @@ delayed_flights <- df %>%
 delayed_flights
 ```
 
-Let's delayed flight data as a histogram. Visual inspection shows that AM WEST has greater number of delayed flights to destinations compared to Alaska. The one exception destination is Seattle where Alaska has more delayed flights.
+Let's plot delayed flight data as a histogram. Visual inspection shows that AM WEST has greater number of delayed flights to most destinations compared to Alaska. The one exception destination is Seattle where Alaska has more delayed flights.
 
 ```{r barchart-delayed}
     ggp <- ggplot(data=delayed_flights, aes(x=dest, y=delay_count, fill=airline))
