@@ -4,7 +4,7 @@ author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
   
-  pdf_document: 
+  pdf1_document: 
     toc: true
     toc_depth: 3
     number_sections: true
@@ -33,7 +33,7 @@ library(tidyverse)
 Let's load CSV file containing the data.
 
 ```{r load-data}
-df <- read.csv("jhalak_das.csv")
+df1 <- read.csv("jhalak_das.csv")
 ```
 
 A quick look at the data frame structure identifies some **wider** data characteristics:
@@ -43,55 +43,202 @@ A quick look at the data frame structure identifies some **wider** data characte
 1. Personal data of students (name, sex, phone) intermingled with test data
 
 ```{r}
-str(df)
-head(df)
+str(df1)
+head(df1)
 ```
 
 Let's start by separating **send and age** column into **sex** and **age** columns. Note, during separation we also convert **age** into integer. 
 
 ```{r separate-cols}
-df <- df %>%
+df1 <- df1 %>%
     separate('sex.and.age', sep = '_', into = c('sex', 'age'), convert = TRUE)
-head(df)
+head(df1)
 ```
 
 Next, we **pivot longer** by collapsing the term column names into a **term** column and putting the values into a **score** column.
 
 ```{r pivot-longer}
-df <- df %>%
+df1 <- df1 %>%
         pivot_longer(cols = 7:9,
                      names_to = "term",     # col with term names 
                      values_to = "score")   # col with scores
-head(df)
+head(df1)
 ```
 
 Let's clean up strings: uppercase, trim, replace '.' in term data with space.
 
 ```{r trim}
-df <- df %>%        
+df1 <- df1 %>%        
         mutate(name = str_to_upper(str_trim(name))) %>% 
         mutate(sex = str_to_upper(str_trim(sex))) %>%           
         mutate(test.number = str_to_upper(str_trim(test.number))) %>% 
         mutate(term = str_replace(str_to_upper(str_trim(term)), '\\.', ' '))
-head(df)
+head(df1)
 ```
 
 Next, we separate the table into two. First table contains personal details of students (id, name, phone, sex).
 
 ```{r extract-personal-data}
-df_personal <- df %>%
+df1_personal <- df1 %>%
             select(id, name, phone, sex) %>%
             distinct(id, .keep_all = TRUE) %>%
             arrange(id)
-head(df_personal)
+head(df1_personal)
 ```
 
 And the second table contains key identifying details of students and test scores (id, name, test.number, term, score). Note, strictly speaking the **id** is sufficient to identify students but also having the **name** in this table is convenient.
 
 ```{r extract-test-data}
-df_test <- df %>%
+df1_test <- df1 %>%
             select(id, name, test.number, term, score) %>%
             distinct(id, .keep_all = TRUE) %>%
             arrange(id)
-head(df_test)
+head(df1_test)
 ```
+
+## Data set 2 from Enid Roman
+
+This contains [salary survey data](https://docs.google.com/spreadsheets/d/1IPS5dBSGtwYVbjsfbaMCYIWnOuRmJcbequohNxCyGVw/edit?resourcekey#gid=1625408792).  
+
+Let's load the data.
+
+```{r}
+df2 <- read.csv("survey2021responses.csv")
+str(df2)
+```
+
+The column headers are descriptive but messy to work with. Let's assign concise column headers.
+
+```{r}
+colnames(df2) <- c('timestamp', 
+                   'age', 
+                   'industry', 
+                   'title',
+                   'title_context',
+                   
+                   'annual_salary',
+                   'additional_comp',
+                   'currency',
+                   'currency_other',
+                   'income_context',
+                   
+                   'country',
+                   'state_usa',
+                   'city',
+                   'years_experience_overall',
+                   'years_experience_in_field',
+                   
+                   'highest_education',
+                   'gender',
+                   'race'
+                   )
+str(df2)
+```
+
+Next, we observe that **age** is a range. Let's take a look at the unique values in age column. We see that age has two problematic values: **under 18** and **65 or over**.
+
+```{r}
+unique(df2$age)
+```
+
+Let's do the following transformations:
+
+1. Convert **under 18** to 0-18
+1. Convert **65 or Over** to 65-150
+1. Separate **age** into two columns: age_lower and age_upper
+
+```{r}
+df2 <- df2 %>%
+        mutate(age = ifelse(age == "under 18", "0-18", age)) %>%
+        mutate(age = ifelse(age == "65 or over", "65-150", age)) %>%
+        separate(age, into = c('age_lower', 'age_upper'), convert = TRUE)
+```
+
+Let's take a look at the unique values in *age_lower** and **age_upper** columns. Successful transformation!
+
+```{r}
+unique(df2$age_lower)
+unique(df2$age_upper)
+```
+
+Now let's take a look at the unique values in columns **years_experience_overall** and **years_experience_in_field**.
+
+```{r}
+unique(df2$years_experience_overall)
+unique(df2$years_experience_in_field)
+```
+
+There are a number of transformations that we can make to **years_experience_overall** and **years_experience_in_field**:
+
+1. Convert **41 years or more** to **41-100**
+1. Convert **1 year or less** to **0-1**
+1. Remove whitespace and alphabetic characters from all values
+1. Separate **years_experience_overall**: years_experience_overall_lower and years_experience_overall_upper
+1. Separate **years_experience_in_field**: years_experience_in_field_lower and years_experience_in_field_upper
+
+```{r}
+df2 <- df2 %>%
+        mutate(years_experience_overall = 
+                   ifelse(years_experience_overall == "1 year or less", "0-1", years_experience_overall)) %>%
+        mutate(years_experience_overall = 
+                   ifelse(years_experience_overall == "41 years or more", "41-100", years_experience_overall)) %>%
+        mutate(years_experience_overall = str_remove(years_experience_overall, "years")) %>%
+        mutate(years_experience_overall = str_remove_all(years_experience_overall, "\\s+")) %>%
+        separate(years_experience_overall, into = c('years_experience_overall_lower', 'years_experience_overall_upper'), convert = TRUE) %>%
+
+        mutate(years_experience_in_field = 
+                   ifelse(years_experience_in_field == "1 year or less", "0-1", years_experience_in_field)) %>%
+        mutate(years_experience_in_field = 
+                   ifelse(years_experience_in_field == "41 years or more", "41-100", years_experience_in_field)) %>%
+        mutate(years_experience_in_field = str_remove(years_experience_in_field, "years")) %>%
+        mutate(years_experience_in_field = str_remove_all(years_experience_in_field, "\\s+")) %>%
+        separate(years_experience_in_field, into = c('years_experience_in_field_lower', 'years_experience_in_field_upper'), convert = TRUE)
+```
+
+Verify transformations. Success!
+
+```{r}
+unique(df2$years_experience_overall_lower)
+unique(df2$years_experience_overall_upper)
+unique(df2$years_experience_in_field_lower)
+unique(df2$years_experience_in_field_upper)
+```
+
+A quick look at **country** column shows a number of issues:
+
+1. Uppercase and lowecase names: e.g. 'denmark', 
+1. Misspelling - e.g. 'Nederland', 'Englang', 'united stated'
+1. Variations - e.g. 'United States of America', 'united states', 'U.s.a'
+
+```{r}
+head(df2$country, n = 20)
+```
+
+Fortunately, we can leverage the **countrycode** library to help clean up the country data.
+
+```{r}
+library(countrycode)
+df2 <- df2 %>%
+        mutate(country = countrycode::countryname(country)) %>%
+        mutate(country_code = countrycode::countrycode(country, origin = 'country.name', destination = 'iso3c'))
+head(df2$country, n = 20)
+
+```
+
+Unfortunately, there is a lot of remaining noise in the country data. For example:
+
+1. ARGENTINA BUT MY ORG IS IN THAILAND - there are two countries mentioned
+1. Company in Germany. I work rom Pakistan. - again, two countries mentioned
+
+With greater effort, more cleanup of country names is possible. Left as an exercise for reader!
+
+Final cleanup for this data set is to convert **annual_salary** and **additional_comp** columns to numeric.
+
+```{r}
+ds2 <- df2 %>%
+    mutate(annual_salary = as.numeric(annual_salary)) %>%
+    mutate(additional_comp = as.numeric(additional_comp))
+```
+
+
+
