@@ -4,15 +4,15 @@ author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
   
-  pdf1_document: 
-    toc: true
-    toc_depth: 3
-    number_sections: true
   html_document:
     
     toc: true
     toc_depth: 3
     toc_float: true
+    number_sections: true
+  pdf_document: 
+    toc: true
+    toc_depth: 3
     number_sections: true
 boxlinks: true
 urlcolor: blue
@@ -47,6 +47,8 @@ str(df1)
 head(df1)
 ```
 
+The analysis for this data set is to tidy it up.  
+
 Let's start by separating **send and age** column into **sex** and **age** columns. Note, during separation we also convert **age** into integer. 
 
 ```{r separate-cols}
@@ -76,7 +78,9 @@ df1 <- df1 %>%
 head(df1)
 ```
 
-Next, we separate the table into two. First table contains personal details of students (id, name, phone, sex).
+Next, we separate the table into two. 
+
+First table contains personal details of students (id, name, phone, sex).
 
 ```{r extract-personal-data}
 df1_personal <- df1 %>%
@@ -86,7 +90,7 @@ df1_personal <- df1 %>%
 head(df1_personal)
 ```
 
-And the second table contains key identifying details of students and test scores (id, name, test.number, term, score). Note, strictly speaking the **id** is sufficient to identify students but also having the **name** in this table is convenient.
+Second table contains key identifying details of students and test scores (id, name, test.number, term, score). Note, strictly speaking the **id** is sufficient to identify students but also having the **name** in this table is convenient.
 
 ```{r extract-test-data}
 df1_test <- df1 %>%
@@ -98,12 +102,12 @@ head(df1_test)
 
 ## Data set 2 from Enid Roman
 
-This contains [salary survey data](https://docs.google.com/spreadsheets/d/1IPS5dBSGtwYVbjsfbaMCYIWnOuRmJcbequohNxCyGVw/edit?resourcekey#gid=1625408792).  
+Original data set at in [salary survey data](https://docs.google.com/spreadsheets/d/1IPS5dBSGtwYVbjsfbaMCYIWnOuRmJcbequohNxCyGVw/edit?resourcekey#gid=1625408792).  
 
-Let's load the data.
+This large data file must be downloaded from  [Github](https://github.com/himalayahall/DATA607/blob/main/Project2/enid_roman.csv) and installed in the current working directory. 
 
 ```{r}
-df2 <- read.csv("survey2021responses.csv")
+df2 <- read.csv("enid_roman.csv")
 str(df2)
 ```
 
@@ -154,7 +158,7 @@ df2 <- df2 %>%
         separate(age, into = c('age_lower', 'age_upper'), convert = TRUE)
 ```
 
-Let's take a look at the unique values in *age_lower** and **age_upper** columns. Successful transformation!
+Let's take a look at the unique values in **age_lower** and **age_upper** columns. Successful transformation!
 
 ```{r}
 unique(df2$age_lower)
@@ -230,15 +234,105 @@ Unfortunately, there is a lot of remaining noise in the country data. For exampl
 1. ARGENTINA BUT MY ORG IS IN THAILAND - there are two countries mentioned
 1. Company in Germany. I work rom Pakistan. - again, two countries mentioned
 
-With greater effort, more cleanup of country names is possible. Left as an exercise for reader!
+With greater effort, more cleanup of country names is possible. Left as an exercise for another day!
 
-Final cleanup for this data set is to convert **annual_salary** and **additional_comp** columns to numeric.
+Final cleanup for this data set is to remove number formatting characters from  **annual_salary** and **additional_comp** columns and convert to numeric. Also add **total_comp** column as sum, of annuial_salary and additional_comp.
 
 ```{r}
-ds2 <- df2 %>%
+df2 <- df2 %>%
+    mutate(annual_salary = str_remove_all(annual_salary, "[\\s,]+")) %>%
     mutate(annual_salary = as.numeric(annual_salary)) %>%
-    mutate(additional_comp = as.numeric(additional_comp))
+
+    mutate(additional_comp = str_remove_all(additional_comp, "[\\s,]+")) %>%
+    mutate(additional_comp = as.numeric(additional_comp)) %>%
+    
+    mutate(total_comp = annual_salary + additional_comp) 
 ```
 
+The analysis for this data set is to compare salaries by gender and years of experience. Let's find professions with the largest number of observations.
 
+```{r}
+df2 %>% 
+    filter(currency == 'USD') %>%
+    filter(gender %in% c('Man', 'Woman')) %>%
+    filter(years_experience_in_field_lower > 1) %>%
+    count(title) %>% 
+    arrange(desc(n)) %>%
+    head(10)
+```
+
+To compare salaries by gender and years of experience let's plot a bar chart with the following filters: USD salaries, Man/Woman gender, more than 5 years experience in chosen field, and selected professions.
+
+```{r}
+df2 %>%
+    filter(currency == 'USD') %>%
+    filter(gender %in% c('Man', 'Woman')) %>%
+    filter(years_experience_in_field_lower > 1) %>%
+    filter(title %in% c('Director',
+                        'Senior Software Engineer',
+                        'Project Manager',
+                        'Program Manager',
+                        'Manager',
+                        'Software Engineer',
+                        'Engineering Manager'
+                        )) %>%
+
+    group_by(title, gender) %>%
+    summarize(across(c(total_comp), ~ round(mean(.x, na.rm = TRUE), 0))) %>%
+    
+    ggplot(aes(x = title, y = total_comp, fill=gender)) +  
+    ggtitle('Median Salary by Gender') + 
+    theme(plot.title = element_text(hjust = 0.5)) +  
+    geom_text(aes(label=total_comp), vjust=-0.2,
+                            position = position_dodge(0.9), size=3.5) +
+                            scale_fill_brewer(palette="Paired") +
+    geom_bar(stat="identity", position=position_dodge()) 
+```
+
+## Data set 3 from Wilson Ng
+
+Let's load the data set.
+
+```{r}
+df3 <- read.csv("wilson_ng.csv")
+```
+
+This is a small data set that has the following untidy characteristics:
+
+1. Contains duplicate entries for some fruits - e.g. apple
+1. Price of duplicate items is different
+1. Current symbol is embedded in price
+
+```{r}
+df3
+```
+
+Let's cleanup as follows:
+
+1. Remove currency symbol from price, making the assumption that are prices are in USD
+1. Convert price to numeric
+1. Average price/calories (in case of duplicates)
+1. Remove duplicate fruit entries
+
+```{r}
+df3 <- df3 %>%
+        group_by(item) %>%
+        mutate(price = str_remove(price, '\\$')) %>% # remove $ symbol
+        mutate(price = as.numeric(price)) %>%        # convert to numeric
+        summarize(price = mean(price),               # average price/calories
+              calories = mean(calories)) %>%
+        arrange(item)
+head(df3)
+```
+
+Finally, let's do the analysis and find the cheapest fruit(s) with the most calories. Keeping in mind  there may be more than one qualifying fruit, we first select up to 50% items with the lowest price and then select up to 50% items with the highest calories. 
+
+We see that **mango** is the cheapest fruit (not in the USA!) with the highest calories. Bannna is a close second with the same price but lower calories.
+
+```{r}
+df3 %>%
+    slice_min(price, prop = 1.0) %>%   # find items with min price
+                                       # select up to 50% items
+    slice_max(calories, prop = 0.5)
+```
 
