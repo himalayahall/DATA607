@@ -128,10 +128,10 @@ player_id <- as.integer(
 player_name <- str_trim(                        # assume player names start with a letter
                 str_extract(mPlayersAndGames, "[A-Z][^\\|]+")) 
 
+player_total_points <- as.numeric(str_extract(mPlayersAndGames, "[0-9]+\\.[0-9]"))
+
 player_state <- str_extract(                    # assume 2-letter abbreviation for State
                 mStatesAndRanks, "[A-Z][A-Z]")  
-
-player_total_points <- as.numeric(str_extract(mPlayersAndGames, "[0-9]+\\.[0-9]"))
 
 player_prerating <- as.numeric(str_remove(str_extract(mStatesAndRanks, "R:[ ]+[0-9]{1,}"), "R:[ ]+"))
 
