@@ -24,6 +24,7 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(ggpubr)
 ```
 
 # Assignment
@@ -201,8 +202,6 @@ To compare salaries by gender and years of experience let's plot a bar chart wit
 Plot shows that across the top-n professions average total compensation for men is higher than for women.
 
 ```{r}
-library(ggpubr)
-
 df %>%
     filter(currency == 'USD') %>%
     filter(gender %in% c('Man', 'Woman')) %>%
