@@ -21,7 +21,9 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
+# Load libraries
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
@@ -30,16 +32,20 @@ library(tidyverse)
 
 ## Data set from Wilson Ng
 
-Let's load the data set. This is a small data set with the following untidy characteristics:
-
-1. Contains duplicate entries for fruits - e.g. apple
-1. Duplicate items have different prices
-1. Currency symbol is embedded in price
+Let's load the data set.
 
 ```{r}
 df <- read.csv("wilson_ng.csv")
 df
 ```
+
+## Tidy
+
+This is a minimal data set with the following untidy characteristics:
+
+1. Contains duplicate entries for fruits - e.g. apple
+1. Duplicate items have different prices
+1. Currency symbol is embedded in price
 
 Let's cleanup the data as follows:
 
@@ -64,18 +70,22 @@ df <- df %>%
 head(df)
 ```
 
-Finally, let's do the analysis and find the cheapest fruit(s) with the most calories. Keeping in mind that there may be more than one qualifying fruit, we first select up to 5 items with the lowest price and then select up to 2 items with the highest calories. 
+## Analysis
 
-We see that **mango** is the cheapest fruit (not in the USA!) with the highest calories. Bannana (misspelt) is second with same price but fewer calories.
+Finally, let's do the analysis and find the cheapest fruit(s) with the most calories. Keeping in mind that there may be more than one qualifying fruit, we first select up to 5 items with the lowest price and then select up to 2 items with the highest calories. 
 
 ```{r}
 min_df <- df %>%
-    arrange(price) %>%
-    slice_min(price, n = 5)
-min_df
+            slice_min(price, n = 5)     # 5 items
 
-min_df %>%                                       
-    arrange(desc(calories)) %>%
-    slice_max(calories, n = 2) # select up to 50% items
+min_df <- min_df %>%                                       
+            slice_max(calories, n = 2)  # 2 items
 ```
+
+We see that **mango** is the cheapest fruit (not in the USA!) with the highest calories. Bannana (misspelt) is a close second with same price but fewer calories.
+
+```{r}
+min_df
+```
+
 

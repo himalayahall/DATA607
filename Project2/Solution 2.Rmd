@@ -21,9 +21,14 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
+# Load libraries
+
+Note: solution uses two non-standard libraries: **ggpubr** and **countrycode**.
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(countrycode)
 library(ggpubr)
 ```
 
@@ -31,16 +36,18 @@ library(ggpubr)
 
 ## Data set from Enid Roman
 
-Original data set at in [salary survey data](https://docs.google.com/spreadsheets/d/1IPS5dBSGtwYVbjsfbaMCYIWnOuRmJcbequohNxCyGVw/edit?resourcekey#gid=1625408792).  
+Original data at in [salary survey data](https://docs.google.com/spreadsheets/d/1IPS5dBSGtwYVbjsfbaMCYIWnOuRmJcbequohNxCyGVw/edit?resourcekey#gid=1625408792).  
 
-This large data file must be downloaded from  [Github](https://github.com/himalayahall/DATA607/blob/main/Project2/enid_roman.csv) and installed in the current working directory. 
+This is a large file and must be downloaded from  [Github](https://github.com/himalayahall/DATA607/blob/main/Project2/enid_roman.csv) into the the current working directory. 
 
 ```{r}
 df <- read.csv("enid_roman.csv")
 str(df)
 ```
 
-The column headers are descriptive but messy to work with. Let's assign concise column headers.
+## Tidy
+
+A quick look shows that headers are long and descriptive but messy to work with. Let's assign concise column headers.
 
 ```{r}
 colnames(df) <- c('timestamp', 
@@ -68,7 +75,7 @@ colnames(df) <- c('timestamp',
 str(df)
 ```
 
-Next, we observe that **age** is a range. Let's take a look at the unique values in age column. We see that age has two problematic values: **under 18** and **65 or over**.
+Next, we observe that **age** is a range. In addition, it has two non-range values: **under 18** and **65 or over**.
 
 ```{r}
 unique(df$age)
@@ -78,13 +85,19 @@ Let's do the following transformations:
 
 1. Convert **under 18** to 0-18
 1. Convert **65 or Over** to 65-150
-1. Separate **age** into two columns: age_lower and age_upper
+1. Separate **age** column into two: age_lower and age_upper
 
 ```{r}
 df <- df %>%
-        mutate(age = ifelse(age == "under 18", "0-18", age)) %>%
-        mutate(age = ifelse(age == "65 or over", "65-150", age)) %>%
-        separate(age, into = c('age_lower', 'age_upper'), convert = TRUE)
+        mutate(age = ifelse(age == "under 18", 
+                            "0-18", 
+                            age)) %>%
+        mutate(age = ifelse(age == "65 or over", 
+                            "65-150", 
+                            age)) %>%
+        separate(age, 
+                 into = c('age_lower', 'age_upper'), 
+                 convert = TRUE)
 ```
 
 Let's take a look at the unique values in **age_lower** and **age_upper** columns. Successful transformation!
@@ -103,32 +116,65 @@ unique(df$years_experience_in_field)
 
 There are a number of transformations that we can make to **years_experience_overall** and **years_experience_in_field**:
 
-1. Convert **41 years or more** to **41-100**
 1. Convert **1 year or less** to **0-1**
+1. Convert **41 years or more** to **41-100**
 1. Remove whitespace and alphabetic characters from all values
 1. Separate **years_experience_overall**: years_experience_overall_lower and years_experience_overall_upper
 1. Separate **years_experience_in_field**: years_experience_in_field_lower and years_experience_in_field_upper
 
 ```{r}
+# years_experience_overall
 df <- df %>%
         mutate(years_experience_overall = 
-                   ifelse(years_experience_overall == "1 year or less", "0-1", years_experience_overall)) %>%
+                   ifelse(
+                       years_experience_overall == "1 year or less", 
+                       "0-1", 
+                       years_experience_overall)) %>%
+    
         mutate(years_experience_overall = 
-                   ifelse(years_experience_overall == "41 years or more", "41-100", years_experience_overall)) %>%
-        mutate(years_experience_overall = str_remove(years_experience_overall, "years")) %>%
-        mutate(years_experience_overall = str_remove_all(years_experience_overall, "\\s+")) %>%
-        separate(years_experience_overall, into = c('years_experience_overall_lower', 'years_experience_overall_upper'), convert = TRUE) %>%
+                   ifelse(
+                       years_experience_overall == "41 years or more", 
+                       "41-100", 
+                       years_experience_overall)) %>%
+    
+        mutate(
+            years_experience_overall = str_remove(years_experience_overall, "years")) %>%
+    
+        mutate(
+            years_experience_overall = str_remove_all(years_experience_overall, "\\s+")) %>%
+    
+        separate(
+            years_experience_overall, 
+            into = c('years_experience_overall_lower', 'years_experience_overall_upper'), 
+            convert = TRUE)
 
+# years_experience_in_field
+df <- df %>%
         mutate(years_experience_in_field = 
-                   ifelse(years_experience_in_field == "1 year or less", "0-1", years_experience_in_field)) %>%
+                   ifelse(
+                       years_experience_in_field == "1 year or less", 
+                       "0-1", 
+                       years_experience_in_field)) %>%
+    
         mutate(years_experience_in_field = 
-                   ifelse(years_experience_in_field == "41 years or more", "41-100", years_experience_in_field)) %>%
-        mutate(years_experience_in_field = str_remove(years_experience_in_field, "years")) %>%
-        mutate(years_experience_in_field = str_remove_all(years_experience_in_field, "\\s+")) %>%
-        separate(years_experience_in_field, into = c('years_experience_in_field_lower', 'years_experience_in_field_upper'), convert = TRUE)
+                   ifelse(
+                       years_experience_in_field == "41 years or more", 
+                       "41-100", 
+                       years_experience_in_field)) %>%
+    
+        mutate(
+            years_experience_in_field = str_remove(years_experience_in_field, "years")) %>%
+    
+        mutate(
+            years_experience_in_field = str_remove_all(years_experience_in_field, "\\s+")) %>%
+    
+        separate(
+            years_experience_in_field, 
+            into = c('years_experience_in_field_lower', 'years_experience_in_field_upper'), 
+            convert = TRUE)
 ```
 
-Verify transformations. Success!
+Verify transformations by printing unique values in lower/upper columns. Success!
 
 ```{r}
 unique(df$years_experience_overall_lower)
@@ -144,26 +190,30 @@ A quick look at **country** column shows a number of issues:
 1. Variations - e.g. 'United States of America', 'united states', 'U.s.a'
 
 ```{r}
-head(df$country, n = 20)
+head(unique(df$country), n = 20)
 ```
 
-Fortunately, we can leverage the **countrycode** library to help clean up the country data.
+Let's leverage the **countrycode** library to help clean up country names. After cleaning up, print first few names to verify. Looks much better!
 
 ```{r}
-library(countrycode)
 df <- df %>%
-        mutate(country = countrycode::countryname(country)) %>%
-        mutate(country_code = countrycode::countrycode(country, origin = 'country.name', destination = 'iso3c'))
-head(df$country, n = 20)
+        mutate(
+            country = countrycode::countryname(country)) %>%
+        mutate(
+            country_code = countrycode::countrycode(country, 
+            origin = 'country.name', 
+            destination = 'iso3c'))
+
+head(unique(df$country), n = 20)
 
 ```
 
-Unfortunately, there is a lot of remaining noise in the country data. For example:
+However, there is remaining noise in country names. For example:
 
 1. ARGENTINA BUT MY ORG IS IN THAILAND - there are two countries mentioned
 1. Company in Germany. I work rom Pakistan. - again, two countries mentioned
 
-With greater effort, more cleanup of country names is possible. Left as an exercise for another day!
+With greater effort, additional cleanup of country names is possible. Another strategy would be for the data team to fix the problem at the source - e.g. restrict country names on form input. Left as an exercise for another day!
 
 Final cleanup for this data set is to remove number formatting characters from  **annual_salary** and **additional_comp** columns and convert to numeric. Also add **total_comp** column as sum, of annuial_salary and additional_comp.
 
@@ -178,7 +228,9 @@ df <- df %>%
     mutate(total_comp = annual_salary + additional_comp) 
 ```
 
-The analysis for this data set is to compare salaries by gender and years of experience. Let's find professions with the largest number of observations so we can make some generalizations.
+## Analysis
+
+Analysis for this data set is to compare salaries by gender and years of experience. Let's find professions with the largest number of observations so we can make some generalizations.
 
 ```{r}
 top_n <- df %>% 
@@ -187,7 +239,7 @@ top_n <- df %>%
             filter(years_experience_in_field_lower > 1) %>%
             count(title) %>% 
             arrange(desc(n)) %>%
-            head(7) 
+            head(7)  # top 7 - professions with highest number of observations
 
 top_n
 ```

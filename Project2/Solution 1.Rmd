@@ -21,7 +21,9 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
+# Load libraries
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
@@ -30,28 +32,33 @@ library(tidyverse)
 
 ## Data set from Jhalak Das
 
-Let's load CSV file containing the data. A quick look at the data frame structure identifies some **wider** data characteristics:
-
-1. Terms scores separate columns
-1. **sex and age** are concatenated into a single column
-1. Personal data of students (name, sex, phone) intermingled with test data
+Let's load CSV file containing the data.
 
 ```{r load-data}
 df <- read.csv("jhalak_das.csv")
-head(df)
+df
 ```
 
-The analysis for this data set is to tidy it up.  
+## Tidy
 
-Let's start by separating **send and age** column into **sex** and **age** columns. Note, during separation we also convert **age** into integer. 
+A quick look at the data frame structure identifies some **wider** data characteristics:
+
+1. Term scores separate columns
+1. **sex and age** are concatenated into a single column
+1. Personal data of students (name, sex, phone) intermingled with test data
+
+Let's start by separating **sex.and.age** column into **sex** and **age** columns. Note, during separation we also convert **age** into integer. 
 
 ```{r separate-cols}
 df <- df %>%
-    separate('sex.and.age', sep = '_', into = c('sex', 'age'), convert = TRUE)
-head(df)
+    separate('sex.and.age', 
+             sep = '_', 
+             into = c('sex', 'age'), 
+             convert = TRUE)
+head(df, n = 20)
 ```
 
-Next, we **pivot longer** by collapsing the term column names into a **term** column and putting the values into a **score** column.
+Next, we **pivot longer** by collapsing the term column names  - term1., term.2, term.3 - into a **term** column and putting values into a **score** column.
 
 ```{r pivot-longer}
 df <- df %>%
@@ -61,20 +68,22 @@ df <- df %>%
 head(df)
 ```
 
-Let's clean up strings: uppercase, trim, replace '.' in term data with space.
+Next, clean up strings: uppercase values, trim white spaces, replace '.' in term column data with space.
 
 ```{r trim}
 df <- df %>%        
         mutate(name = str_to_upper(str_trim(name))) %>% 
-        mutate(sex = str_to_upper(str_trim(sex))) %>%           
+    
+        mutate(sex = str_to_upper(str_trim(sex))) %>%     
+    
         mutate(test.number = str_to_upper(str_trim(test.number))) %>% 
-        mutate(term = str_replace(str_to_upper(str_trim(term)), '\\.', ' '))
+    
+        mutate(term = str_replace(
+                        str_to_upper(str_trim(term)), '\\.', ' '))
 head(df)
 ```
 
-Next, we separate the table into two. 
-
-First table contains personal details of students (id, name, phone, sex).
+Next, we separate the data into two tables. First table contains personal details of students (id, name, phone, sex).
 
 ```{r extract-personal-data}
 df_personal <- df %>%
@@ -84,12 +93,13 @@ df_personal <- df %>%
 head(df_personal)
 ```
 
-Second table contains key identifying details of students and test scores (id, name, test.number, term, score). Note, strictly speaking the **id** is sufficient to identify students but also having the **name** in this table is convenient.
+Second table contains key details of students and test scores (id, name, test.number, term, score). Note, strictly speaking **id** is sufficient to identify students but  having the **name** in this table is convenient.
+
+That completes the cleanup/analysis of this data set.
 
 ```{r extract-test-data}
 df_test <- df %>%
             select(id, name, test.number, term, score) %>%
-            distinct(id, .keep_all = TRUE) %>%
             arrange(id)
-head(df_test)
+head(df_test, n = 10)
 ```
