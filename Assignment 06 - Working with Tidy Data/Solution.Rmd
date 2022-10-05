@@ -4,15 +4,15 @@ author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
   
-  pdf_document: 
-    toc: true
-    toc_depth: 3
-    number_sections: true
   html_document:
     
     toc: true
     toc_depth: 3
     toc_float: true
+    number_sections: true
+  pdf_document: 
+    toc: true
+    toc_depth: 3
     number_sections: true
 boxlinks: true
 urlcolor: blue
@@ -92,7 +92,7 @@ Next, we observe that data frame in a **wide** format. Specifically, destination
 df <- df %>%
         pivot_longer(!c("airline", "arrival_status"), # pivot cols EXCEPT airline, arrival_status
                      names_to = "dest",               # col with destination names 
-                     values_to = "count")       # col with late flight values
+                     values_to = "flight_count")       # col with late flight values
 head(df)
 ```
 
@@ -110,9 +110,9 @@ delayed_flights
 Let's plot delayed flight data as a histogram. Visual inspection shows that AM WEST has greater number of delayed flights to most destinations compared to Alaska. The one exception destination is Seattle where Alaska has more delayed flights.
 
 ```{r barchart-delayed}
-    ggp <- ggplot(data=delayed_flights, aes(x=dest, y=delay_count, fill=airline))
+    ggp <- ggplot(data=delayed_flights, aes(x=dest, y=flight_count, fill=airline))
     ggp <- ggp +  ggtitle('Delayed Flights') + theme(plot.title = element_text(hjust = 0.5))
-    ggp <- ggp + geom_text(aes(label=delay_count), vjust=-0.2,
+    ggp <- ggp + geom_text(aes(label=flight_count), vjust=-0.2,
                             position = position_dodge(0.9), size=3.5) +
                             scale_fill_brewer(palette="Paired") +
             geom_bar(stat="identity", position=position_dodge()) 
