@@ -92,7 +92,7 @@ Next, we observe that data frame in a **wide** format. Specifically, destination
 df <- df %>%
         pivot_longer(!c("airline", "arrival_status"), # pivot cols EXCEPT airline, arrival_status
                      names_to = "dest",               # col with destination names 
-                     values_to = "delay_count")       # col with late flight values
+                     values_to = "count")       # col with late flight values
 head(df)
 ```
 
