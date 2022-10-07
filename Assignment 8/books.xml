@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <root>
-	<books>
 		<book>
 			<title>Thinking</title>
 			<author> Fast and Slow</author>
@@ -24,5 +23,4 @@
 			<pages>184</pages>
 			<isbn-10>8129140365</isbn-10>
 		</book>
-	</books>
 </root>
