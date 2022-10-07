@@ -5,7 +5,7 @@
 			<author>Daniel Kahneman</author>
 			<medium>Paperback</medium>
 			<pages>499</pages>
-			<isbn-10>0374533555</isbn-10>
+			<isbn>0374533555</isbn>
 		</book>
 
 		<book>
@@ -13,7 +13,7 @@
 			<author>Hilary Mantel</author>
 			<medium>Paperback</medium>
 			<pages>640</pages>
-			<isbn-10>1250806712</isbn-10>
+			<isbn>1250806712</isbn>
 		</book>
 
 		<book>
@@ -21,6 +21,6 @@
 			<author>Jim Corbett</author>
 			<medium>Paperback</medium>
 			<pages>184</pages>
-			<isbn-10>8129140365</isbn-10>
+			<isbn>8129140365</isbn>
 		</book>		
 </root>
