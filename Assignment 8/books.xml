@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<root>
+	<books>
+		<book>
+			<title>Thinking</title>
+			<author> Fast and Slow</author>
+			<medium>Daniel Kahneman</medium>
+			<pages>Paperback</pages>
+			<isbn-10>499</isbn-10>
+		</book>
+
+		<book>
+			<title>Wolf Hall</title>
+			<author>Hilary Mantel</author>
+			<medium>Paperback</medium>
+			<pages>640</pages>
+			<isbn-10>1250806712</isbn-10>
+		</book>
+
+		<book>
+			<title>Man-Eaters of Kumaon</title>
+			<author>Jim Corbett</author>
+			<medium>Paperback</medium>
+			<pages>184</pages>
+			<isbn-10>8129140365</isbn-10>
+		</book>
+	</books>
+</root>

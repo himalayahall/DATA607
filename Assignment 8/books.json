@@ -1,0 +1,27 @@
+{
+  "root": {
+    "book": [
+      {
+        "title": "Thinking",
+        "author": "Fast and Slow",
+        "medium": "Daniel Kahneman",
+        "pages": "Paperback",
+        "isbn-10": 499
+      },
+      {
+        "title": "Wolf Hall",
+        "author": "Hilary Mantel",
+        "medium": "Paperback",
+        "pages": 640,
+        "isbn-10": 1250806712
+      },
+      {
+        "title": "Man-Eaters of Kumaon",
+        "author": "Jim Corbett",
+        "medium": "Paperback",
+        "pages": 184,
+        "isbn-10": 8129140365
+      }
+    ]
+  }
+}
