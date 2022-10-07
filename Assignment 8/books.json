@@ -4,22 +4,22 @@
         "title": "Thinking Fast and Slow",
         "author": "Faniel Kahneman",
         "medium": "Paperback",
-        "pages": "Paperback",
-        "isbn-10": 499
+        "pages": 499,
+        "isbn-10": "0374533555"
       },
       {
         "title": "Wolf Hall",
         "author": "Hilary Mantel",
         "medium": "Paperback",
         "pages": 640,
-        "isbn-10": 1250806712
+        "isbn-10": "1250806712"
       },
       {
         "title": "Man-Eaters of Kumaon",
         "author": "Jim Corbett",
         "medium": "Paperback",
         "pages": 184,
-        "isbn-10": 8129140365
+        "isbn-10": "8129140365"
       }
     ]
 }
