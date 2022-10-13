@@ -1,5 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<root>
+<?xml version="1.0"?>
+
+<root xmlns="https://www.w3schools.com"
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	  xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd"
+	  >
+
 		<book>
 			<title>Thinking Fast and Slow</title>
 			<author>Daniel Kahneman</author>
@@ -23,4 +28,5 @@
 			<pages>184</pages>
 			<isbn>8129140365</isbn>
 		</book>		
+
 </root>
