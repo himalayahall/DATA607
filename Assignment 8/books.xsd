@@ -12,16 +12,22 @@
 		</xs:restriction>
 	</xs:simpleType>
 
-	<xs:element name="book">
-		<xs:complexType>
-			<xs:all>
-				<xs:element name="title" type="xs:string" maxOccurs="1"/>
-				<xs:element name="author" type="xs:string" />
-				<xs:element name="medium" type="mediumType" maxOccurs="1" />
-				<xs:element name="pages" type="xs:int" maxOccurs="1" />
-				<xs:element name="isbn" type="xs:string" maxOccurs="1" />
-			</xs:all>
-		</xs:complexType>	
-	</xs:element>
+	<xs:complexType name="book">
+		<xs:all>
+			<xs:element name="title" type="xs:string" maxOccurs="1"/>
+			<xs:element name="author" type="xs:string" />
+			<xs:element name="medium" type="mediumType" maxOccurs="1" />
+			<xs:element name="pages" type="xs:int" maxOccurs="1" />
+			<xs:element name="isbn" type="xs:string" maxOccurs="1" />
+		</xs:all>
+	</xs:complexType>	
+
+  <xs:element name="root">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="book" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
 
 </xs:schema>
