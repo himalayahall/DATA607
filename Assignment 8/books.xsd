@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Created with Liquid Technologies Online Tools 1.0 (https://www.liquid-technologies.com) -->
 <xs:schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="https://www.w3schools.com" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:element name="root">
     <xs:complexType>
@@ -11,7 +10,7 @@
               <xs:element name="author" type="xs:string" />
               <xs:element name="medium" type="xs:string" />
               <xs:element name="pages" type="xs:unsignedShort" />
-              <xs:element name="isbn" type="xs:unsignedLong" />
+              <xs:element name="isbn" type="xs:string" />
             </xs:sequence>
           </xs:complexType>
         </xs:element>
