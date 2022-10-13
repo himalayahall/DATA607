@@ -1568,35 +1568,40 @@ files accessible from the web]</p>
 <p>Each book entry in the data set contains 5 variables: title, author,
 medium, pages, and isbn. For example:</p>
 <blockquote>
-<p>“title”: “Thinking Fast and Slow”, “author”: “Faniel Kahneman”,
+<p>“title”: “Thinking Fast and Slow”, “author”: “Daniel Kahneman”,
 “medium”: “Paperback”, “pages”: 499, “isbn”: “0374533555”</p>
 </blockquote>
 </div>
 <div id="json" class="section level1" number="4">
 <h1><span class="header-section-number">4</span> JSON</h1>
-<p>First load the JSON file. As expected, the resulting data frame has 3
-observation of 5 variables.</p>
+<p>First load the JSON file. As expected, the resulting data frame
+contains 3 observatios of 5 variables. Note, the <em>pages</em> variable
+is of <em>int</em> type.</p>
 <pre class="r"><code>d &lt;- jsonlite::fromJSON(txt = &quot;https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.json&quot;)
 df_json &lt;- as.data.frame(d)
 str(df_json)</code></pre>
 <pre><code>## &#39;data.frame&#39;:    3 obs. of  5 variables:
 ##  $ book.title : chr  &quot;Thinking Fast and Slow&quot; &quot;Wolf Hall&quot; &quot;Man-Eaters of Kumaon&quot;
-##  $ book.author: chr  &quot;Faniel Kahneman&quot; &quot;Hilary Mantel&quot; &quot;Jim Corbett&quot;
+##  $ book.author: chr  &quot;Daniel Kahneman&quot; &quot;Hilary Mantel&quot; &quot;Jim Corbett&quot;
 ##  $ book.medium: chr  &quot;Paperback&quot; &quot;Paperback&quot; &quot;Paperback&quot;
 ##  $ book.pages : int  499 640 184
 ##  $ book.isbn  : chr  &quot;0374533555&quot; &quot;1250806712&quot; &quot;8129140365&quot;</code></pre>
 <pre class="r"><code>df_json</code></pre>
 <pre><code>##               book.title     book.author book.medium book.pages  book.isbn
-## 1 Thinking Fast and Slow Faniel Kahneman   Paperback        499 0374533555
+## 1 Thinking Fast and Slow Daniel Kahneman   Paperback        499 0374533555
 ## 2              Wolf Hall   Hilary Mantel   Paperback        640 1250806712
 ## 3   Man-Eaters of Kumaon     Jim Corbett   Paperback        184 8129140365</code></pre>
 </div>
 <div id="xml" class="section level1" number="5">
 <h1><span class="header-section-number">5</span> XML</h1>
 <p>Next, we load the same data in XML format. Note, both JSON and XML
-data frames are very similar (same nu)</p>
-<pre class="r"><code>book_data &lt;- xml2::read_xml(&quot;https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xml&quot;)
-book_xml &lt;- XML::xmlParse(book_data)
+data frames are very similar. However, unlike the JSON version, the data
+type for <em>pages</em> is <em>chr</em> (string)</p>
+<p>The correct way to fix the issue of type safety in XML documents is
+by through the use of <strong>XML Schema</strong> (DTD or XSD). For
+example, here is a basic XSD schema for this assignment <img src="data:text/plain; charset=utf-8;charset=utf-8,%3C%3Fxml%20version%3D%221%2E0%22%20encoding%3D%22utf%2D8%22%3F%3E%0A%3Cxs%3Aschema%20xmlns%3Axsi%3D%22http%3A%2F%2Fwww%2Ew3%2Eorg%2F2001%2FXMLSchema%2Dinstance%22%20attributeFormDefault%3D%22unqualified%22%20elementFormDefault%3D%22qualified%22%20targetNamespace%3D%22https%3A%2F%2Fwww%2Ew3schools%2Ecom%22%20xmlns%3Axs%3D%22http%3A%2F%2Fwww%2Ew3%2Eorg%2F2001%2FXMLSchema%22%3E%0A%20%20%3Cxs%3Aelement%20name%3D%22root%22%3E%0A%20%20%20%20%3Cxs%3AcomplexType%3E%0A%20%20%20%20%20%20%3Cxs%3Asequence%3E%0A%20%20%20%20%20%20%20%20%3Cxs%3Aelement%20maxOccurs%3D%22unbounded%22%20name%3D%22book%22%3E%0A%20%20%20%20%20%20%20%20%20%20%3Cxs%3AcomplexType%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cxs%3Asequence%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cxs%3Aelement%20name%3D%22title%22%20type%3D%22xs%3Astring%22%20%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cxs%3Aelement%20name%3D%22author%22%20type%3D%22xs%3Astring%22%20%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cxs%3Aelement%20name%3D%22medium%22%20type%3D%22xs%3Astring%22%20%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cxs%3Aelement%20name%3D%22pages%22%20type%3D%22xs%3AunsignedShort%22%20%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cxs%3Aelement%20name%3D%22isbn%22%20type%3D%22xs%3Astring%22%20%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fxs%3Asequence%3E%0A%20%20%20%20%20%20%20%20%20%20%3C%2Fxs%3AcomplexType%3E%0A%20%20%20%20%20%20%20%20%3C%2Fxs%3Aelement%3E%0A%20%20%20%20%20%20%3C%2Fxs%3Asequence%3E%0A%20%20%20%20%3C%2Fxs%3AcomplexType%3E%0A%20%20%3C%2Fxs%3Aelement%3E%0A%3C%2Fxs%3Aschema%3E" />.</p>
+<pre class="r"><code>book_data_xml &lt;- xml2::read_xml(&quot;https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xml&quot;)
+book_xml &lt;- XML::xmlParse(book_data_xml)
 df_xml &lt;- xmlToDataFrame(nodes=getNodeSet(book_xml, &quot;//book&quot;))
 str(df_xml)</code></pre>
 <pre><code>## &#39;data.frame&#39;:    3 obs. of  5 variables:
@@ -1613,21 +1618,22 @@ str(df_xml)</code></pre>
 </div>
 <div id="html" class="section level1" number="6">
 <h1><span class="header-section-number">6</span> HTML</h1>
-<p>Finally, the same data is loaded in HTML fromat.</p>
+<p>Finally, the same data is loaded in HTML format. Here, the data frame
+is identical to XML.</p>
 <pre class="r"><code>df_html &lt;- htmltab::htmltab(doc = &quot;https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.html&quot;)</code></pre>
 <pre><code>## Argument &#39;which&#39; was left unspecified. Choosing first table.</code></pre>
 <pre class="r"><code>str(df_html)</code></pre>
 <pre><code>## &#39;data.frame&#39;:    3 obs. of  5 variables:
 ##  $ title : chr  &quot;Thinking Fast and Slow&quot; &quot;Wolf Hall&quot; &quot;Man-Eaters of Kumaon&quot;
 ##  $ author: chr  &quot;Daniel Kahneman&quot; &quot;Hilary Mantel&quot; &quot;Jim Corbett&quot;
-##  $ medium: chr  &quot;Paperback/td&gt;&quot; &quot;Paperback&quot; &quot;Paperback&quot;
+##  $ medium: chr  &quot;Paperback&quot; &quot;Paperback&quot; &quot;Paperback&quot;
 ##  $ pages : chr  &quot;499&quot; &quot;640&quot; &quot;184&quot;
 ##  $ isbn  : chr  &quot;0374533555&quot; &quot;1250806712&quot; &quot;8129140365&quot;</code></pre>
 <pre class="r"><code>df_html</code></pre>
-<pre><code>##                    title          author        medium pages       isbn
-## 2 Thinking Fast and Slow Daniel Kahneman Paperback/td&gt;   499 0374533555
-## 3              Wolf Hall   Hilary Mantel     Paperback   640 1250806712
-## 4   Man-Eaters of Kumaon     Jim Corbett     Paperback   184 8129140365</code></pre>
+<pre><code>##                    title          author    medium pages       isbn
+## 2 Thinking Fast and Slow Daniel Kahneman Paperback   499 0374533555
+## 3              Wolf Hall   Hilary Mantel Paperback   640 1250806712
+## 4   Man-Eaters of Kumaon     Jim Corbett Paperback   184 8129140365</code></pre>
 </div>
 
 
