@@ -2,7 +2,7 @@
     "book": [
       {
         "title": "Thinking Fast and Slow",
-        "authors": [
+        "author": [
             "Daniel Kahneman"
         ],
         "medium": "Paperback",
@@ -11,7 +11,7 @@
       },
       {
         "title": "Wolf Hall",
-        "authors": [
+        "author": [
             "Hilary Mantel"
         ],
         "medium": "Paperback",
@@ -20,7 +20,7 @@
       },
       {
         "title": "Man-Eaters of Kumaon",
-         "authors": [
+         "author": [
             "Jim Corbett"
          ],
         "medium": "Paperback",
@@ -29,7 +29,7 @@
       },
       {
         "title": "All the Ways We Said Goodbye",
-        "authors": [
+        "author": [
             "Lauran Willig", "Karen White"
         ],
         "medium": "Hardcover",
