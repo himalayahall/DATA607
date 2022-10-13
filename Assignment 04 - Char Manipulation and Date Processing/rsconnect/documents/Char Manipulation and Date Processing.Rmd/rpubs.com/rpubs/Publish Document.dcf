@@ -1,0 +1,11 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/942145/16ef91d04a4d4249b2c050c73b0f9c85
+bundleId: https://api.rpubs.com/api/v1/document/942145/16ef91d04a4d4249b2c050c73b0f9c85
+url: http://rpubs.com/jhakim/942145
+when: 1663197490.65624
+lastSyncTime: 1663197490.65625

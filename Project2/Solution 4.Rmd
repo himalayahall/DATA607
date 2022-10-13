@@ -1,0 +1,133 @@
+---
+title: "Project 2 - Solution 4"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output:
+  
+  html_document:
+    
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+  pdf_document: 
+    toc: true
+    toc_depth: 3
+    number_sections: true
+boxlinks: true
+urlcolor: blue
+always_allow_html: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Load libraries
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(magick)
+library(tesseract)
+```
+
+# Assignment
+
+## Data set
+
+Let's load JPEG image containing the data.
+
+```{r load-data}
+img_url <- "file:///Users/jawaidhakim/Desktop/Screen Shot.png"
+
+raw_img <- image_read(img_url)
+image_ggplot(raw_img)
+```
+
+## Tidy
+
+Let's do a quick OCR using raw image.
+
+1. Column headers are not recognized 
+1. Gender for Sally is misread as incorrectly as *a* instead of *1*
+1. Age for Michael is read incorrectly as  *The* instead of *"7"*
+1. Age for Elizabeth is read incorrectly as *s* instead of *"6"*
+1. Gender for Mary is read incorrectly as *4* instead of *1*
+
+```{r}
+raw_img %>% 
+    ocr()
+```
+
+Color images are problematic for OCR engines. Convert image to grayscale.
+
+1. Column headers are correctly recognized 
+1. Gender for Sally is read correctly as *1*
+1. Age for Michael is read correctly *"7"* but gender is incorrect
+1. Age for Elizabeth is read correctly as *"6"s*
+1. Gender for Mary is read incorrectly as *4* instead of *1*
+
+
+```{r}
+raw_img %>% 
+  image_quantize(colorspace = "Gray") %>% 
+  image_threshold(type = "white", threshold = "50%") #%>%
+  image_ggplot()
+```
+
+OCR grayscale image.
+
+1. Column headers are recognized 
+1. Gender for Sally is read correctly as *1*
+1. Age for Michael is read incorrectly *wa* instead of *"7"*
+1. Age for Elizabeth is correctly as *"6"*
+1. Gender for Mary is read incorrectly as *4* instead of *1*
+
+```{r}
+raw_img %>% 
+  image_quantize(colorspace = "Gray") %>% 
+  image_transparent(color = "white", fuzz=20) %>% 
+  image_background("white") %>%
+  #image_negate() %>%
+  ocr()
+```
+
+
+```{r}
+fuzz_fun <- function(fuzz){
+  raw_img %>% 
+    image_quantize(colorspace = "gray") %>% 
+    image_transparent(color = "white", fuzz=fuzz) %>% 
+    image_contrast(sharpen = 20) %>%
+    image_background("white")
+}
+```
+
+OCR engines are also misled by gray lines. Let's eliminate the image background.
+
+1. Column headers are recognized 
+1. Gender for Sally is read correctly as *1*
+1. Age for Michael is read incorrectly *wa* instead of *"7"*
+1. Age for Elizabeth is correctly as *"6"*
+1. Gender for Mary is read correctly as *1*
+
+```{r}
+no_grid <- raw_img %>% 
+    image_quantize(colorspace = "gray") %>% 
+    image_transparent(color = "white", fuzz=30) %>% 
+    image_contrast(sharpen = 10) %>%
+    image_background("white") 
+```
+
+```{r}
+no_grid %>%
+  image_negate() %>% # negate
+  image_morphology(method = "Thinning", kernel = "Rectangle:20x1") %>%
+  image_negate() %>% # back to white
+  image_ggplot()
+```
+
+```{r}
+no_grid %>% 
+    image_ocr()
+```
+

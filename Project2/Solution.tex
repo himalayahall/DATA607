@@ -1,0 +1,851 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Project 2},
+  pdfauthor={Jawaid Hakim},
+  colorlinks=true,
+  linkcolor={Maroon},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={blue},
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Project 2}
+\author{Jawaid Hakim}
+\date{2022-09-29}
+
+\begin{document}
+\maketitle
+
+{
+\hypersetup{linkcolor=}
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+\hypertarget{assignment}{%
+\section{Assignment}\label{assignment}}
+
+\hypertarget{data-set-1-from-jhalak-das}{%
+\subsection{Data set 1 from Jhalak
+Das}\label{data-set-1-from-jhalak-das}}
+
+Let's load CSV file containing the data.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df1 }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"jhalak\_das.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+A quick look at the data frame structure identifies some \textbf{wider}
+data characteristics:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Terms scores separate columns
+\item
+  \textbf{sex and age} are concatenated into a single column
+\item
+  Personal data of students (name, sex, phone) intermingled with test
+  data
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{str}\NormalTok{(df1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 'data.frame':    10 obs. of  8 variables:
+##  $ id         : num  1 2 3 4 5 1 2 3 4 5
+##  $ name       : chr  "Mike   " "Linda   " " Sam    " "Esther" ...
+##  $ phone      : num  134 270 210 617 114 134 270 210 617 114
+##  $ sex.and.age: chr  " m_12   " "f_13    " "  m_11   " " f_12 " ...
+##  $ test.number: chr  "test 1       " "test 1       " " test 1     " "   test 1  " ...
+##  $ term.1     : num  76 88 78 68 65 85 87 80 70 68
+##  $ term.2     : num  84 90 74 75 67 80 82 87 75 70
+##  $ term.3     : num  87 73 80 74 64 90 94 80 78 63
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(df1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   id     name phone sex.and.age   test.number term.1 term.2 term.3
+## 1  1  Mike      134     m_12    test 1            76     84     87
+## 2  2 Linda      270    f_13     test 1            88     90     73
+## 3  3  Sam       210     m_11      test 1          78     74     80
+## 4  4   Esther   617       f_12       test 1       68     75     74
+## 5  5   Mary     114     f_14     test 1           65     67     64
+## 6  1  Mike      134     m_12       test 2         85     80     90
+\end{verbatim}
+
+The analysis for this data set is to tidy it up.
+
+Let's start by separating \textbf{send and age} column into \textbf{sex}
+and \textbf{age} columns. Note, during separation we also convert
+\textbf{age} into integer.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df1 }\OtherTok{\textless{}{-}}\NormalTok{ df1 }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{separate}\NormalTok{(}\StringTok{\textquotesingle{}sex.and.age\textquotesingle{}}\NormalTok{, }\AttributeTok{sep =} \StringTok{\textquotesingle{}\_\textquotesingle{}}\NormalTok{, }\AttributeTok{into =} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}sex\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}age\textquotesingle{}}\NormalTok{), }\AttributeTok{convert =} \ConstantTok{TRUE}\NormalTok{)}
+\FunctionTok{head}\NormalTok{(df1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   id     name phone  sex age   test.number term.1 term.2 term.3
+## 1  1  Mike      134    m  12 test 1            76     84     87
+## 2  2 Linda      270    f  13 test 1            88     90     73
+## 3  3  Sam       210    m  11   test 1          78     74     80
+## 4  4   Esther   617    f  12      test 1       68     75     74
+## 5  5   Mary     114    f  14  test 1           65     67     64
+## 6  1  Mike      134    m  12    test 2         85     80     90
+\end{verbatim}
+
+Next, we \textbf{pivot longer} by collapsing the term column names into
+a \textbf{term} column and putting the values into a \textbf{score}
+column.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df1 }\OtherTok{\textless{}{-}}\NormalTok{ df1 }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{pivot\_longer}\NormalTok{(}\AttributeTok{cols =} \DecValTok{7}\SpecialCharTok{:}\DecValTok{9}\NormalTok{,}
+                     \AttributeTok{names\_to =} \StringTok{"term"}\NormalTok{,     }\CommentTok{\# col with term names }
+                     \AttributeTok{values\_to =} \StringTok{"score"}\NormalTok{)   }\CommentTok{\# col with scores}
+\FunctionTok{head}\NormalTok{(df1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 8
+##      id name       phone sex     age test.number     term   score
+##   <dbl> <chr>      <dbl> <chr> <dbl> <chr>           <chr>  <dbl>
+## 1     1 "Mike   "    134 " m"     12 "test 1       " term.1    76
+## 2     1 "Mike   "    134 " m"     12 "test 1       " term.2    84
+## 3     1 "Mike   "    134 " m"     12 "test 1       " term.3    87
+## 4     2 "Linda   "   270 "f"      13 "test 1       " term.1    88
+## 5     2 "Linda   "   270 "f"      13 "test 1       " term.2    90
+## 6     2 "Linda   "   270 "f"      13 "test 1       " term.3    73
+\end{verbatim}
+
+Let's clean up strings: uppercase, trim, replace `.' in term data with
+space.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df1 }\OtherTok{\textless{}{-}}\NormalTok{ df1 }\SpecialCharTok{\%\textgreater{}\%}        
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{name =} \FunctionTok{str\_to\_upper}\NormalTok{(}\FunctionTok{str\_trim}\NormalTok{(name))) }\SpecialCharTok{\%\textgreater{}\%} 
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{sex =} \FunctionTok{str\_to\_upper}\NormalTok{(}\FunctionTok{str\_trim}\NormalTok{(sex))) }\SpecialCharTok{\%\textgreater{}\%}           
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{test.number =} \FunctionTok{str\_to\_upper}\NormalTok{(}\FunctionTok{str\_trim}\NormalTok{(test.number))) }\SpecialCharTok{\%\textgreater{}\%} 
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{term =} \FunctionTok{str\_replace}\NormalTok{(}\FunctionTok{str\_to\_upper}\NormalTok{(}\FunctionTok{str\_trim}\NormalTok{(term)), }\StringTok{\textquotesingle{}}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{.\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{} \textquotesingle{}}\NormalTok{))}
+\FunctionTok{head}\NormalTok{(df1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 8
+##      id name  phone sex     age test.number term   score
+##   <dbl> <chr> <dbl> <chr> <dbl> <chr>       <chr>  <dbl>
+## 1     1 MIKE    134 M        12 TEST 1      TERM 1    76
+## 2     1 MIKE    134 M        12 TEST 1      TERM 2    84
+## 3     1 MIKE    134 M        12 TEST 1      TERM 3    87
+## 4     2 LINDA   270 F        13 TEST 1      TERM 1    88
+## 5     2 LINDA   270 F        13 TEST 1      TERM 2    90
+## 6     2 LINDA   270 F        13 TEST 1      TERM 3    73
+\end{verbatim}
+
+Next, we separate the table into two.
+
+First table contains personal details of students (id, name, phone,
+sex).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df1\_personal }\OtherTok{\textless{}{-}}\NormalTok{ df1 }\SpecialCharTok{\%\textgreater{}\%}
+            \FunctionTok{select}\NormalTok{(id, name, phone, sex) }\SpecialCharTok{\%\textgreater{}\%}
+            \FunctionTok{distinct}\NormalTok{(id, }\AttributeTok{.keep\_all =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+            \FunctionTok{arrange}\NormalTok{(id)}
+\FunctionTok{head}\NormalTok{(df1\_personal)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 5 x 4
+##      id name   phone sex  
+##   <dbl> <chr>  <dbl> <chr>
+## 1     1 MIKE     134 M    
+## 2     2 LINDA    270 F    
+## 3     3 SAM      210 M    
+## 4     4 ESTHER   617 F    
+## 5     5 MARY     114 F
+\end{verbatim}
+
+Second table contains key identifying details of students and test
+scores (id, name, test.number, term, score). Note, strictly speaking the
+\textbf{id} is sufficient to identify students but also having the
+\textbf{name} in this table is convenient.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df1\_test }\OtherTok{\textless{}{-}}\NormalTok{ df1 }\SpecialCharTok{\%\textgreater{}\%}
+            \FunctionTok{select}\NormalTok{(id, name, test.number, term, score) }\SpecialCharTok{\%\textgreater{}\%}
+            \FunctionTok{distinct}\NormalTok{(id, }\AttributeTok{.keep\_all =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+            \FunctionTok{arrange}\NormalTok{(id)}
+\FunctionTok{head}\NormalTok{(df1\_test)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 5 x 5
+##      id name   test.number term   score
+##   <dbl> <chr>  <chr>       <chr>  <dbl>
+## 1     1 MIKE   TEST 1      TERM 1    76
+## 2     2 LINDA  TEST 1      TERM 1    88
+## 3     3 SAM    TEST 1      TERM 1    78
+## 4     4 ESTHER TEST 1      TERM 1    68
+## 5     5 MARY   TEST 1      TERM 1    65
+\end{verbatim}
+
+\hypertarget{data-set-2-from-enid-roman}{%
+\subsection{Data set 2 from Enid
+Roman}\label{data-set-2-from-enid-roman}}
+
+Original data set at in
+\href{https://docs.google.com/spreadsheets/d/1IPS5dBSGtwYVbjsfbaMCYIWnOuRmJcbequohNxCyGVw/edit?resourcekey\#gid=1625408792}{salary
+survey data}.
+
+This large data file must be downloaded from
+\href{https://github.com/himalayahall/DATA607/blob/main/Project2/enid_roman.csv}{Github}
+and installed in the current working directory.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df2 }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"enid\_roman.csv"}\NormalTok{)}
+\FunctionTok{str}\NormalTok{(df2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 'data.frame':    27879 obs. of  18 variables:
+##  $ Timestamp                                                                                                                                                                                                                           : chr  "4/27/2021 11:02:10" "4/27/2021 11:02:22" "4/27/2021 11:02:38" "4/27/2021 11:02:41" ...
+##  $ How.old.are.you.                                                                                                                                                                                                                    : chr  "25-34" "25-34" "25-34" "25-34" ...
+##  $ What.industry.do.you.work.in.                                                                                                                                                                                                       : chr  "Education (Higher Education)" "Computing or Tech" "Accounting, Banking & Finance" "Nonprofits" ...
+##  $ Job.title                                                                                                                                                                                                                           : chr  "Research and Instruction Librarian" "Change & Internal Communications Manager" "Marketing Specialist" "Program Manager" ...
+##  $ If.your.job.title.needs.additional.context..please.clarify.here.                                                                                                                                                                    : chr  "" "" "" "" ...
+##  $ What.is.your.annual.salary...You.ll.indicate.the.currency.in.a.later.question..If.you.are.part.time.or.hourly..please.enter.an.annualized.equivalent....what.you.would.earn.if.you.worked.the.job.40.hours.a.week..52.weeks.a.year..: chr  "55,000" "54,600" "34,000" "62,000" ...
+##  $ How.much.additional.monetary.compensation.do.you.get..if.any..for.example..bonuses.or.overtime.in.an.average.year...Please.only.include.monetary.compensation.here..not.the.value.of.benefits.                                      : int  0 4000 NA 3000 7000 NA 2000 NA 10000 0 ...
+##  $ Please.indicate.the.currency                                                                                                                                                                                                        : chr  "USD" "GBP" "USD" "USD" ...
+##  $ If..Other...please.indicate.the.currency.here..                                                                                                                                                                                     : chr  "" "" "" "" ...
+##  $ If.your.income.needs.additional.context..please.provide.it.here.                                                                                                                                                                    : chr  "" "" "" "" ...
+##  $ What.country.do.you.work.in.                                                                                                                                                                                                        : chr  "United States" "United Kingdom" "US" "USA" ...
+##  $ If.you.re.in.the.U.S...what.state.do.you.work.in.                                                                                                                                                                                   : chr  "Massachusetts" "" "Tennessee" "Wisconsin" ...
+##  $ What.city.do.you.work.in.                                                                                                                                                                                                           : chr  "Boston" "Cambridge" "Chattanooga" "Milwaukee" ...
+##  $ How.many.years.of.professional.work.experience.do.you.have.overall.                                                                                                                                                                 : chr  "5-7 years" "8 - 10 years" "2 - 4 years" "8 - 10 years" ...
+##  $ How.many.years.of.professional.work.experience.do.you.have.in.your.field.                                                                                                                                                           : chr  "5-7 years" "5-7 years" "2 - 4 years" "5-7 years" ...
+##  $ What.is.your.highest.level.of.education.completed.                                                                                                                                                                                  : chr  "Master's degree" "College degree" "College degree" "College degree" ...
+##  $ What.is.your.gender.                                                                                                                                                                                                                : chr  "Woman" "Non-binary" "Woman" "Woman" ...
+##  $ What.is.your.race...Choose.all.that.apply..                                                                                                                                                                                         : chr  "White" "White" "White" "White" ...
+\end{verbatim}
+
+The column headers are descriptive but messy to work with. Let's assign
+concise column headers.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{colnames}\NormalTok{(df2) }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}timestamp\textquotesingle{}}\NormalTok{, }
+                   \StringTok{\textquotesingle{}age\textquotesingle{}}\NormalTok{, }
+                   \StringTok{\textquotesingle{}industry\textquotesingle{}}\NormalTok{, }
+                   \StringTok{\textquotesingle{}title\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}title\_context\textquotesingle{}}\NormalTok{,}
+                   
+                   \StringTok{\textquotesingle{}annual\_salary\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}additional\_comp\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}currency\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}currency\_other\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}income\_context\textquotesingle{}}\NormalTok{,}
+                   
+                   \StringTok{\textquotesingle{}country\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}state\_usa\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}city\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}years\_experience\_overall\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}years\_experience\_in\_field\textquotesingle{}}\NormalTok{,}
+                   
+                   \StringTok{\textquotesingle{}highest\_education\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}gender\textquotesingle{}}\NormalTok{,}
+                   \StringTok{\textquotesingle{}race\textquotesingle{}}
+\NormalTok{                   )}
+\FunctionTok{str}\NormalTok{(df2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 'data.frame':    27879 obs. of  18 variables:
+##  $ timestamp                : chr  "4/27/2021 11:02:10" "4/27/2021 11:02:22" "4/27/2021 11:02:38" "4/27/2021 11:02:41" ...
+##  $ age                      : chr  "25-34" "25-34" "25-34" "25-34" ...
+##  $ industry                 : chr  "Education (Higher Education)" "Computing or Tech" "Accounting, Banking & Finance" "Nonprofits" ...
+##  $ title                    : chr  "Research and Instruction Librarian" "Change & Internal Communications Manager" "Marketing Specialist" "Program Manager" ...
+##  $ title_context            : chr  "" "" "" "" ...
+##  $ annual_salary            : chr  "55,000" "54,600" "34,000" "62,000" ...
+##  $ additional_comp          : int  0 4000 NA 3000 7000 NA 2000 NA 10000 0 ...
+##  $ currency                 : chr  "USD" "GBP" "USD" "USD" ...
+##  $ currency_other           : chr  "" "" "" "" ...
+##  $ income_context           : chr  "" "" "" "" ...
+##  $ country                  : chr  "United States" "United Kingdom" "US" "USA" ...
+##  $ state_usa                : chr  "Massachusetts" "" "Tennessee" "Wisconsin" ...
+##  $ city                     : chr  "Boston" "Cambridge" "Chattanooga" "Milwaukee" ...
+##  $ years_experience_overall : chr  "5-7 years" "8 - 10 years" "2 - 4 years" "8 - 10 years" ...
+##  $ years_experience_in_field: chr  "5-7 years" "5-7 years" "2 - 4 years" "5-7 years" ...
+##  $ highest_education        : chr  "Master's degree" "College degree" "College degree" "College degree" ...
+##  $ gender                   : chr  "Woman" "Non-binary" "Woman" "Woman" ...
+##  $ race                     : chr  "White" "White" "White" "White" ...
+\end{verbatim}
+
+Next, we observe that \textbf{age} is a range. Let's take a look at the
+unique values in age column. We see that age has two problematic values:
+\textbf{under 18} and \textbf{65 or over}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{age)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "25-34"      "45-54"      "35-44"      "18-24"      "65 or over"
+## [6] "55-64"      "under 18"
+\end{verbatim}
+
+Let's do the following transformations:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Convert \textbf{under 18} to 0-18
+\item
+  Convert \textbf{65 or Over} to 65-150
+\item
+  Separate \textbf{age} into two columns: age\_lower and age\_upper
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df2 }\OtherTok{\textless{}{-}}\NormalTok{ df2 }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{age =} \FunctionTok{ifelse}\NormalTok{(age }\SpecialCharTok{==} \StringTok{"under 18"}\NormalTok{, }\StringTok{"0{-}18"}\NormalTok{, age)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{age =} \FunctionTok{ifelse}\NormalTok{(age }\SpecialCharTok{==} \StringTok{"65 or over"}\NormalTok{, }\StringTok{"65{-}150"}\NormalTok{, age)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{separate}\NormalTok{(age, }\AttributeTok{into =} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}age\_lower\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}age\_upper\textquotesingle{}}\NormalTok{), }\AttributeTok{convert =} \ConstantTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Let's take a look at the unique values in *age\_lower\textbf{ and
+}age\_upper** columns. Successful transformation!
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{age\_lower)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 25 45 35 18 65 55  0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{age\_upper)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]  34  54  44  24 150  64  18
+\end{verbatim}
+
+Now let's take a look at the unique values in columns
+\textbf{years\_experience\_overall} and
+\textbf{years\_experience\_in\_field}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{years\_experience\_overall)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "5-7 years"        "8 - 10 years"     "2 - 4 years"      "21 - 30 years"   
+## [5] "11 - 20 years"    "1 year or less"   "41 years or more" "31 - 40 years"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{years\_experience\_in\_field)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "5-7 years"        "2 - 4 years"      "21 - 30 years"    "11 - 20 years"   
+## [5] "1 year or less"   "8 - 10 years"     "31 - 40 years"    "41 years or more"
+\end{verbatim}
+
+There are a number of transformations that we can make to
+\textbf{years\_experience\_overall} and
+\textbf{years\_experience\_in\_field}:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Convert \textbf{41 years or more} to \textbf{41-100}
+\item
+  Convert \textbf{1 year or less} to \textbf{0-1}
+\item
+  Remove whitespace and alphabetic characters from all values
+\item
+  Separate \textbf{years\_experience\_overall}:
+  years\_experience\_overall\_lower and
+  years\_experience\_overall\_upper
+\item
+  Separate \textbf{years\_experience\_in\_field}:
+  years\_experience\_in\_field\_lower and
+  years\_experience\_in\_field\_upper
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df2 }\OtherTok{\textless{}{-}}\NormalTok{ df2 }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{years\_experience\_overall =} 
+                   \FunctionTok{ifelse}\NormalTok{(years\_experience\_overall }\SpecialCharTok{==} \StringTok{"1 year or less"}\NormalTok{, }\StringTok{"0{-}1"}\NormalTok{, years\_experience\_overall)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{years\_experience\_overall =} 
+                   \FunctionTok{ifelse}\NormalTok{(years\_experience\_overall }\SpecialCharTok{==} \StringTok{"41 years or more"}\NormalTok{, }\StringTok{"41{-}100"}\NormalTok{, years\_experience\_overall)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{years\_experience\_overall =} \FunctionTok{str\_remove}\NormalTok{(years\_experience\_overall, }\StringTok{"years"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{years\_experience\_overall =} \FunctionTok{str\_remove\_all}\NormalTok{(years\_experience\_overall, }\StringTok{"}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{s+"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{separate}\NormalTok{(years\_experience\_overall, }\AttributeTok{into =} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}years\_experience\_overall\_lower\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}years\_experience\_overall\_upper\textquotesingle{}}\NormalTok{), }\AttributeTok{convert =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{years\_experience\_in\_field =} 
+                   \FunctionTok{ifelse}\NormalTok{(years\_experience\_in\_field }\SpecialCharTok{==} \StringTok{"1 year or less"}\NormalTok{, }\StringTok{"0{-}1"}\NormalTok{, years\_experience\_in\_field)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{years\_experience\_in\_field =} 
+                   \FunctionTok{ifelse}\NormalTok{(years\_experience\_in\_field }\SpecialCharTok{==} \StringTok{"41 years or more"}\NormalTok{, }\StringTok{"41{-}100"}\NormalTok{, years\_experience\_in\_field)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{years\_experience\_in\_field =} \FunctionTok{str\_remove}\NormalTok{(years\_experience\_in\_field, }\StringTok{"years"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{years\_experience\_in\_field =} \FunctionTok{str\_remove\_all}\NormalTok{(years\_experience\_in\_field, }\StringTok{"}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{s+"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{separate}\NormalTok{(years\_experience\_in\_field, }\AttributeTok{into =} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}years\_experience\_in\_field\_lower\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}years\_experience\_in\_field\_upper\textquotesingle{}}\NormalTok{), }\AttributeTok{convert =} \ConstantTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Verify transformations. Success!
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{years\_experience\_overall\_lower)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]  5  8  2 21 11  0 41 31
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{years\_experience\_overall\_upper)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]   7  10   4  30  20   1 100  40
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{years\_experience\_in\_field\_lower)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]  5  2 21 11  0  8 31 41
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{unique}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{years\_experience\_in\_field\_upper)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]   7   4  30  20   1  10  40 100
+\end{verbatim}
+
+A quick look at \textbf{country} column shows a number of issues:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Uppercase and lowecase names: e.g.~`denmark',
+\item
+  Misspelling - e.g.~`Nederland', `Englang', `united stated'
+\item
+  Variations - e.g.~`United States of America', `united states', `U.s.a'
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{country, }\AttributeTok{n =} \DecValTok{20}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] "United States"   "United Kingdom"  "US"              "USA"            
+##  [5] "US"              "USA"             "USA"             "United States"  
+##  [9] "US"              "United States"   "United States"   "USA"            
+## [13] "United States"   "United States"   "Canada"          "United Kingdom "
+## [17] "USA"             "usa"             "USA"             "United States"
+\end{verbatim}
+
+Fortunately, we can leverage the \textbf{countrycode} library to help
+clean up the country data.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(countrycode)}
+\NormalTok{df2 }\OtherTok{\textless{}{-}}\NormalTok{ df2 }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{country =}\NormalTok{ countrycode}\SpecialCharTok{::}\FunctionTok{countryname}\NormalTok{(country)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{country\_code =}\NormalTok{ countrycode}\SpecialCharTok{::}\FunctionTok{countrycode}\NormalTok{(country, }\AttributeTok{origin =} \StringTok{\textquotesingle{}country.name\textquotesingle{}}\NormalTok{, }\AttributeTok{destination =} \StringTok{\textquotesingle{}iso3c\textquotesingle{}}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning in countrycode_convert(sourcevar = sourcevar, origin = origin, destination = dest, : Some values were not matched unambiguously: 🇺🇸 , $2,175.84/year is deducted for benefits, Africa, america, America, ARGENTINA BUT MY ORG IS IN THAILAND, bonus based on meeting yearly goals set w/ my supervisor, California , Can, Canad, Canada and USA, Canadw, Canda, Catalonia, Company in Germany. I work from Pakistan., Contracts, Csnada, Currently finance, england, ENGLAND, England , England, Gb, England, UK, England, UK., England/UK, Englang, europe, Global, Hartford, hong konh, I earn commission on sales. If I meet quota, I'm guaranteed another 16k min. Last year i earned an additional 27k. It's not uncommon for people in my space to earn 100k+ after commission. , I was brought in on this salary to help with the EHR and very quickly was promoted to current position but compensation was not altered. , I work for a UAE-based organization, though I am personally in the US., I.S., International , IS, ISA, Jersey, Channel islands, n/a (remote from wherever I want), na, NL, Northern Ireland, Northern Ireland , NZ, Policy, Remote, San Francisco, Scotland, Scotland , Scotland, UK, The US, U. S , U. S., U. S. , U.A., U.K. (northern England), UA, UK (England), UK (Northern Ireland), UK for U.S. company, UK, but for globally fully remote company, UK, remote, Uniited States, Unite States, United  States, United Kindom, United Sates, United Sates of America, United Stares, United Stares , United State, United State of America, United Statea, united stated, United Stated, United Stateds, United Statees, United States (I work from home and my clients are all over the US/Canada/PR, United States- Puerto Rico, United Statesp, United statew, United Statss, United Stattes, United Statues, United Status, United Statws, United Sttes, United y, Uniteed States, Unitef Stated, Uniter Statez, Unites kingdom , Unites States, Unites states , Unites States , Unitied States, Uniyed states, Uniyes States, Unted States, Untied States, USA-- Virgin Islands, USaa, USAB, Usat, USD, USS, UXZ, Virginia, Wales, Wales (UK), Wales, UK, We don't get raises, we get quarterly bonuses, but they periodically asses income in the area you work, so I got a raise because a 3rd party assessment showed I was paid too little for the area we were located, Worldwide (based in US but short term trips aroudn the world), Y
+\end{verbatim}
+
+\begin{verbatim}
+## Warning in countrycode_convert(sourcevar = sourcevar, origin = origin, destination = dest, : Some strings were matched more than once, and therefore set to <NA> in the result: ARGENTINA BUT MY ORG IS IN THAILAND,Argentina,Thailand; Canada and USA,Canada,United States; Company in Germany. I work from Pakistan.,Germany,Pakistan; Jersey, Channel islands,Channel Islands,Jersey; United States (I work from home and my clients are all over the US/Canada/PR,Canada,United States; United States- Puerto Rico,Puerto Rico,United States; USA-- Virgin Islands,U.S. Virgin Islands,United States
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(df2}\SpecialCharTok{$}\NormalTok{country, }\AttributeTok{n =} \DecValTok{20}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] "US"     "UK"     "US"     "US"     "US"     "US"     "US"     "US"    
+##  [9] "US"     "US"     "US"     "US"     "US"     "US"     "Canada" "UK"    
+## [17] "US"     "US"     "US"     "US"
+\end{verbatim}
+
+Unfortunately, there is a lot of remaining noise in the country data.
+For example:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  ARGENTINA BUT MY ORG IS IN THAILAND - there are two countries
+  mentioned
+\item
+  Company in Germany. I work rom Pakistan. - again, two countries
+  mentioned
+\end{enumerate}
+
+With greater effort, more cleanup of country names is possible. Left as
+an exercise for reader!
+
+Final cleanup for this data set is to remove number formatting
+characters from \textbf{annual\_salary} and \textbf{additional\_comp}
+columns and convert to numeric. Also add \textbf{total\_comp} column as
+sum, of annuial\_salary and additional\_comp.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df2 }\OtherTok{\textless{}{-}}\NormalTok{ df2 }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{mutate}\NormalTok{(}\AttributeTok{annual\_salary =} \FunctionTok{str\_remove\_all}\NormalTok{(annual\_salary, }\StringTok{"[}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{s,]+"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{mutate}\NormalTok{(}\AttributeTok{annual\_salary =} \FunctionTok{as.numeric}\NormalTok{(annual\_salary)) }\SpecialCharTok{\%\textgreater{}\%}
+
+    \FunctionTok{mutate}\NormalTok{(}\AttributeTok{additional\_comp =} \FunctionTok{str\_remove\_all}\NormalTok{(additional\_comp, }\StringTok{"[}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{s,]+"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{mutate}\NormalTok{(}\AttributeTok{additional\_comp =} \FunctionTok{as.numeric}\NormalTok{(additional\_comp)) }\SpecialCharTok{\%\textgreater{}\%}
+    
+    \FunctionTok{mutate}\NormalTok{(}\AttributeTok{total\_comp =}\NormalTok{ annual\_salary }\SpecialCharTok{+}\NormalTok{ additional\_comp) }
+\end{Highlighting}
+\end{Shaded}
+
+The analysis for this data set is to compare salaries by gender and
+years of experience. Let's find professions with the largest number of
+observations.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df2 }\SpecialCharTok{\%\textgreater{}\%} 
+    \FunctionTok{filter}\NormalTok{(currency }\SpecialCharTok{==} \StringTok{\textquotesingle{}USD\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{filter}\NormalTok{(gender }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}Man\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}Woman\textquotesingle{}}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{filter}\NormalTok{(years\_experience\_in\_field\_lower }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{count}\NormalTok{(title) }\SpecialCharTok{\%\textgreater{}\%} 
+    \FunctionTok{arrange}\NormalTok{(}\FunctionTok{desc}\NormalTok{(n)) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{head}\NormalTok{(}\DecValTok{10}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                       title   n
+## 1         Software Engineer 200
+## 2           Project Manager 175
+## 3                  Director 168
+## 4  Senior Software Engineer 159
+## 5                 Librarian 128
+## 6           Program Manager 127
+## 7                   Teacher 120
+## 8                   Manager 108
+## 9       Executive Assistant 101
+## 10          Product Manager  95
+\end{verbatim}
+
+To compare salaries by gender and years of experience let's plot a bar
+chart with the following filters: USD salaries, Man/Woman gender, more
+than 5 years experience in chosen field, and selected professions.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df2 }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{filter}\NormalTok{(currency }\SpecialCharTok{==} \StringTok{\textquotesingle{}USD\textquotesingle{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{filter}\NormalTok{(gender }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}Man\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}Woman\textquotesingle{}}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{filter}\NormalTok{(years\_experience\_in\_field\_lower }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{filter}\NormalTok{(title }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}Director\textquotesingle{}}\NormalTok{,}
+                        \StringTok{\textquotesingle{}Senior Software Engineer\textquotesingle{}}\NormalTok{,}
+                        \StringTok{\textquotesingle{}Project Manager\textquotesingle{}}\NormalTok{,}
+                        \StringTok{\textquotesingle{}Program Manager\textquotesingle{}}\NormalTok{,}
+                        \StringTok{\textquotesingle{}Manager\textquotesingle{}}\NormalTok{,}
+                        \StringTok{\textquotesingle{}Software Engineer\textquotesingle{}}\NormalTok{,}
+                        \StringTok{\textquotesingle{}Engineering Manager\textquotesingle{}}
+\NormalTok{                        )) }\SpecialCharTok{\%\textgreater{}\%}
+
+    \FunctionTok{group\_by}\NormalTok{(title, gender) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{summarize}\NormalTok{(}\FunctionTok{across}\NormalTok{(}\FunctionTok{c}\NormalTok{(total\_comp), }\SpecialCharTok{\textasciitilde{}} \FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(.x, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{), }\DecValTok{0}\NormalTok{))) }\SpecialCharTok{\%\textgreater{}\%}
+    
+    \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ title, }\AttributeTok{y =}\NormalTok{ total\_comp, }\AttributeTok{fill=}\NormalTok{gender)) }\SpecialCharTok{+}  
+    \FunctionTok{ggtitle}\NormalTok{(}\StringTok{\textquotesingle{}Median Salary by Gender\textquotesingle{}}\NormalTok{) }\SpecialCharTok{+} 
+    \FunctionTok{theme}\NormalTok{(}\AttributeTok{plot.title =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{hjust =} \FloatTok{0.5}\NormalTok{)) }\SpecialCharTok{+}  
+    \FunctionTok{geom\_text}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{label=}\NormalTok{total\_comp), }\AttributeTok{vjust=}\SpecialCharTok{{-}}\FloatTok{0.2}\NormalTok{,}
+                            \AttributeTok{position =} \FunctionTok{position\_dodge}\NormalTok{(}\FloatTok{0.9}\NormalTok{), }\AttributeTok{size=}\FloatTok{3.5}\NormalTok{) }\SpecialCharTok{+}
+                            \FunctionTok{scale\_fill\_brewer}\NormalTok{(}\AttributeTok{palette=}\StringTok{"Paired"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{geom\_bar}\NormalTok{(}\AttributeTok{stat=}\StringTok{"identity"}\NormalTok{, }\AttributeTok{position=}\FunctionTok{position\_dodge}\NormalTok{()) }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## `summarise()` has grouped output by 'title'. You can override using the
+## `.groups` argument.
+\end{verbatim}
+
+\includegraphics{Solution_files/figure-latex/unnamed-chunk-14-1.pdf}
+
+\hypertarget{data-set-3-from-wilson-ng}{%
+\subsection{Data set 3 from Wilson Ng}\label{data-set-3-from-wilson-ng}}
+
+Let's load the data set.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df3 }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"wilson\_ng.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+This is a small data set that has the following untidy characteristics:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Contains duplicate entries for some fruits - e.g.~apple
+\item
+  Price of duplicate items is different
+\item
+  Current symbol is embedded in price
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df3}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##         item price calories
+## 1    bannana    $1      105
+## 2      apple $0.75       95
+## 3      apple $0.75       95
+## 4      peach    $3       55
+## 5      peach    $4       55
+## 6 clementine  $2.5       35
+## 7      mango    $1      200
+\end{verbatim}
+
+Let's cleanup as follows:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Remove currency symbol from price, making the assumption that are
+  prices are in USD
+\item
+  Convert price to numeric
+\item
+  Average price/calories (in case of duplicates)
+\item
+  Remove duplicate fruit entries
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df3 }\OtherTok{\textless{}{-}}\NormalTok{ df3 }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{group\_by}\NormalTok{(item) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{price =} \FunctionTok{str\_remove}\NormalTok{(price, }\StringTok{\textquotesingle{}}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{$\textquotesingle{}}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\# remove $ symbol}
+        \FunctionTok{mutate}\NormalTok{(}\AttributeTok{price =} \FunctionTok{as.numeric}\NormalTok{(price)) }\SpecialCharTok{\%\textgreater{}\%}        \CommentTok{\# convert to numeric}
+        \FunctionTok{summarize}\NormalTok{(}\AttributeTok{price =} \FunctionTok{mean}\NormalTok{(price),               }\CommentTok{\# average price/calories}
+              \AttributeTok{calories =} \FunctionTok{mean}\NormalTok{(calories)) }\SpecialCharTok{\%\textgreater{}\%}
+        \FunctionTok{arrange}\NormalTok{(item)}
+\FunctionTok{head}\NormalTok{(df3)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 5 x 3
+##   item       price calories
+##   <chr>      <dbl>    <dbl>
+## 1 apple       0.75       95
+## 2 bannana     1         105
+## 3 clementine  2.5        35
+## 4 mango       1         200
+## 5 peach       3.5        55
+\end{verbatim}
+
+Finally, let's do the analysis and find the cheapest fruit(s) with the
+most calories. Keeping in mind there may be more than one qualifying
+fruit, we first select up to 50\% items with the lowest price and then
+select up to 50\% items with the highest calories.
+
+We see that \textbf{mango} is the cheapest fruit (not in the USA!) with
+the highest calories. Bannna is a close second with the same price but
+lower calories.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df3 }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{slice\_min}\NormalTok{(price, }\AttributeTok{prop =} \FloatTok{1.0}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}   \CommentTok{\# find items with min price}
+                                       \CommentTok{\# select up to 50\% items}
+    \FunctionTok{slice\_max}\NormalTok{(calories, }\AttributeTok{prop =} \FloatTok{0.5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 2 x 3
+##   item    price calories
+##   <chr>   <dbl>    <dbl>
+## 1 mango       1      200
+## 2 bannana     1      105
+\end{verbatim}
+
+\end{document}
