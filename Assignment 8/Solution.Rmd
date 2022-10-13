@@ -47,11 +47,19 @@ Your deliverable is the three source files and the R code. If you can, package y
 an .Rmd file and publish to rpubs.com. [This will also require finding a way to make your three text files
 accessible from the web]
 
+# Data
 
+Each book entry in the data set contains 5 variables: title, author, medium, pages, and isbn. For example:
+
+> "title": "Thinking Fast and Slow",
+  "author": "Faniel Kahneman",
+  "medium": "Paperback",
+  "pages": 499,
+  "isbn": "0374533555"
+        
 # JSON
 
-
-First load the JSON file.
+First load the JSON file. As expected, the resulting data frame has 3 observation of 5 variables.
 
 ```{r}
 d <- jsonlite::fromJSON(txt = "https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.json")
@@ -62,6 +70,8 @@ df_json
 
 # XML
 
+Next, we load the same data in XML format. Note, both JSON and XML data frames are very similar (same nu)
+
 ```{r}
 book_data <- xml2::read_xml("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xml")
 book_xml <- XML::xmlParse(book_data)
@@ -71,6 +81,8 @@ df_xml
 ```
 
 # HTML
+
+Finally, the same data is loaded in HTML fromat.
 
 ```{r}
 df_html <- htmltab::htmltab(doc = "https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.html")
