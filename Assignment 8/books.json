@@ -2,29 +2,36 @@
     "book": [
       {
         "title": "Thinking Fast and Slow",
-        "author": "Daniel Kahneman",
+        "authors": [
+            "Daniel Kahneman"
+        ],
         "medium": "Paperback",
         "pages": 499,
         "isbn": "0374533555"
       },
       {
         "title": "Wolf Hall",
-        "author": "Hilary Mantel",
+        "aurhors": [
+            "Hilary Mantel"
+        ],
         "medium": "Paperback",
         "pages": 640,
         "isbn": "1250806712"
       },
       {
         "title": "Man-Eaters of Kumaon",
-        "author": "Jim Corbett",
+         "authors": [
+            "Jim Corbett"
+         ],
         "medium": "Paperback",
         "pages": 184,
         "isbn": "8129140365"
       },
       {
         "title": "All the Ways We Said Goodbye",
-        "author": "Lauran Willig",
-        "author": "Karen White",
+        "authors": [
+            "Lauran Willig", "Karen White"
+        ],
         "medium": "Hardcover",
         "pages": 448,
         "isbn": "0062931091"
