@@ -1,31 +1,31 @@
 <?xml version="1.0"?>
 
 <root xmlns="https://www.w3schools.com"
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd">
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	  xsi:schemaLocation="https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd">
 
-		<book>
-			<title>Thinking Fast and Slow</title>
-			<author>Daniel Kahneman</author>
-			<medium>Paperback</medium>
-			<pages>499</pages>
-			<isbn>0374533555</isbn>
-		</book>
+		<books:book>
+			<books:title>Thinking Fast and Slow</books:title>
+			<books:author>Daniel Kahneman</books:author>
+			<books:medium>Paperback</books:medium>
+			<books:pages>499</books:pages>
+			<books:pisbn>0374533555</books:pisbn>
+		</books:book>
 
-		<book>
-			<title>Wolf Hall</title>
-			<author>Hilary Mantel</author>
-			<medium>Paperback</medium>
-			<pages>640</pages>
-			<isbn>1250806712</isbn>
-		</book>
+		<books:book>
+			<books:title>Wolf Hall</books:title>
+			<books:author>Hilary Mantel</books:author>
+			<books:medium>Paperback</books:medium>
+			<books:pages>640</books:pages>
+			<books:pisbn>1250806712</books:pisbn>
+		</books:book>
 
-		<book>
-			<title>Man-Eaters of Kumaon</title>
-			<author>Jim Corbett</author>
-			<medium>Paperback</medium>
-			<pages>184</pages>
-			<isbn>8129140365</isbn>
-		</book>		
+		<books:book>
+			<books:title>Man-Eaters of Kumaon</books:title>
+			<books:author>Jim Corbett</books:author>
+			<books:medium>Paperback</books:medium>
+			<books:pages>184</books:pages>
+			<books:pisbn>8129140365</books:pisbn>
+		</books:book>		
 
 </root>
