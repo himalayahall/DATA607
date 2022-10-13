@@ -1,33 +1,21 @@
-<?xml version="1.0"?>
-
-<xs:schema  targetNamespace="https://raw.githubusercontent.com/himalayahall/DATA607/BookType"
-			xmlns:xs="http://www.w3.org/2001/XMLSchema"
-			elementFormDefault="qualified">	
-	
-	<!-- Define medium enumeration -->
-	<xs:simpleType name="mediumType">
-		<xs:restriction base="xs:string">
-			<xs:enumeration value="paperback" />
-			<xs:enumeration value="hardcover" />
-		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:complexType name="book">
-		<xs:all>
-			<xs:element name="title" type="xs:string" maxOccurs="1"/>
-			<xs:element name="author" type="xs:string" />
-			<xs:element name="medium" type="mediumType" maxOccurs="1" />
-			<xs:element name="pages" type="xs:int" maxOccurs="1" />
-			<xs:element name="isbn" type="xs:string" maxOccurs="1" />
-		</xs:all>
-	</xs:complexType>	
-
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Created with Liquid Technologies Online Tools 1.0 (https://www.liquid-technologies.com) -->
+<xs:schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="https://www.w3schools.com" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:element name="root">
     <xs:complexType>
       <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="book" />
+        <xs:element maxOccurs="unbounded" name="book">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="title" type="xs:string" />
+              <xs:element name="author" type="xs:string" />
+              <xs:element name="medium" type="xs:string" />
+              <xs:element name="pages" type="xs:unsignedShort" />
+              <xs:element name="isbn" type="xs:unsignedLong" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
-
 </xs:schema>
