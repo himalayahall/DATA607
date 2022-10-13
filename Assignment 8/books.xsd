@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">	
+	
+	<!-- Define medium enumeration -->
+	<xs:simpletype name="mediumType">
+		<xs:restriction>
+			<xs:enumeration value="paperback" />
+			<xs:enumeration value="hardcover" />
+		</xs:restriction>
+	</xs:simpletype>
+
+	<xs:element name = "book">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="title" type="xs:string" maxOccurs="1"/>
+				<xs:element name="author" type="xs:string" />
+				<xs:element name="medium" type="mediumType" maxOccurs="1" />
+				<xs:element name="pages" type="xs:int" maxOccurs="1" />
+				<xs:element name="isbn" type="xs:string" maxOccurs="1" />
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
