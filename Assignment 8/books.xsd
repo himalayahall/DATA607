@@ -5,12 +5,12 @@
 			elementFormDefault="qualified">	
 	
 	<!-- Define medium enumeration -->
-	<xs:simpletype name="mediumType">
+	<xs:simpleType name="mediumType">
 		<xs:restriction base="xs:string">
 			<xs:enumeration value="paperback" />
 			<xs:enumeration value="hardcover" />
 		</xs:restriction>
-	</xs:simpletype>
+	</xs:simpleType>
 
 	<xs:element name="book">
 		<xs:complexType>
