@@ -26,4 +26,13 @@
 			<isbn>8129140365</isbn>
 		</book>		
 
+		<book>
+			<title>All the Ways We Said Goodbye</title>
+			<author>Lauran Willig</author>
+		    <author>Karen White</author>
+			<medium>Hardcover</medium>
+			<pages>448</pages>
+			<isbn>0062931091</isbn>
+		</book>		
+
 </root>
