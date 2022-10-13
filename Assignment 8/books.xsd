@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<xs:schema  targetNamespace="books"
+<xs:schema  targetNamespace="https://raw.githubusercontent.com/himalayahall/DATA607/BookType"
 			xmlns:xs="http://www.w3.org/2001/XMLSchema"
 			elementFormDefault="qualified">	
 	
@@ -21,7 +21,7 @@
 				<xs:element name="pages" type="xs:int" maxOccurs="1" />
 				<xs:element name="isbn" type="xs:string" maxOccurs="1" />
 			</xs:all>
-		</xs:complexType>
+		</xs:complexType>	
 	</xs:element>
 
 </xs:schema>

@@ -2,7 +2,7 @@
 
 <root xmlns="https://www.w3schools.com"
 	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	  xmlns:b="books"
+	  xmlns:b="https://raw.githubusercontent.com/himalayahall/DATA607/BookType"
 	  xsi:schemaLocation="https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd">
 
 		<b:book>
