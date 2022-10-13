@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 
 <root>
-
 		<book>
 			<title>Thinking Fast and Slow</title>
 			<author>Daniel Kahneman</author>
@@ -34,5 +33,4 @@
 			<pages>448</pages>
 			<isbn>0062931091</isbn>
 		</book>		
-
 </root>
