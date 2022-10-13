@@ -2,7 +2,7 @@
 
 <root xmlns="https://www.w3schools.com"
 	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	  xmlns:b="https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/Books"
+	  xmlns:b="https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd"
 	  xsi:schemaLocation="https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd">
 
 		<b:book>
@@ -18,7 +18,7 @@
 			<b:author>Hilary Mantel</b:author>
 			<b:medium>Paperback</b:medium>
 			<b:pages>640</b:pages>
-			<b:isbn>1250806712</b:pisbn>
+			<b:isbn>1250806712</b:isbn>
 		</b:book>
 
 		<b:book>
