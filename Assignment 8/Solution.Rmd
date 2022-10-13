@@ -70,10 +70,21 @@ df_json
 
 # XML
 
-Next, we load the same data in XML format. Note, both JSON and XML data frames are very similar. However, unlike the JSON version, here the *pages* data type is *chr* (string).
+Next, we load the same data in XML format. Note, both JSON and XML data frames are very similar. However, unlike the JSON version, the *pages* data type is *chr* (string).
 
 ```{r}
 book_data <- xml2::read_xml("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xml")
+book_xml <- XML::xmlParse(book_data)
+df_xml <- xmlToDataFrame(nodes=getNodeSet(book_xml, "//book"))
+str(df_xml)
+df_xml
+```
+
+XML provides support for data types through XML Schemas. Let's load the same XML data that contains data types.
+
+```{r}
+book_data <- xml2::read_xml("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xml")
+
 book_xml <- XML::xmlParse(book_data)
 df_xml <- xmlToDataFrame(nodes=getNodeSet(book_xml, "//book"))
 str(df_xml)
