@@ -25,6 +25,7 @@ editor_options:
 
 ```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
 library(jsonlite)
 library(xml2)
 library(XML)
@@ -84,9 +85,18 @@ str(df_xml)
 df_xml
 ```
 
->To correct the issue of type safety in XML documents one can leverage **XML Schema** (DTD or XSD). XML Schema is a very powerful mechanism for defining the structure of XML documents, type safety, namespace, etc  
+To address the issue of type safety in XML documents one can leverage **XML Schema** (DTD or XSD). XML Schema is a very powerful mechanism for defining the structure of XML documents, type safety, namespace, etc. For example, here is a basic [XSD](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd) for this assignment. Note, this schema describes the various XML elements, associated data types, cardinality, namespace, etc. This schema is just scratching the surface of what is possible. The XSD can be used by validating XML parsers to check whether XML documents are well-formed and also to correctly parse elements and data types.  
 
->For example, here is a basic [XSD](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd) for this assignment. Note, this schema describes the various XML elements, associated data types, cardinality, etc. This is just scrating the surface of what is possible through XSDs. The XSD can be used by validating XML parsers to check whether XML documents are well-formed and also to correctly parse elements and data types. Unfortunately, I have not (yet) been able to find a XML reader in R that leverages XSD to import correct data types.
+Let's validate the XML document against the Schema XSD. Validation succeeds! 
+
+```{r validate-xml}
+doc <- read_xml("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xml", package = "xml2")
+
+xsd <- read_xml("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd", package = "xml2")
+
+xml_validate(doc, xsd)
+```
+
 
 ## HTML
 

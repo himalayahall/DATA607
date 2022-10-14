@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "Book",
+    "type": "object",
+    "properties":
+    {
+        "book": 
+        {
+            "type": "array",
+            "items" :
+            {
+                "type" : "object",
+               "properties":
+                {
+                    "title": 
+                    {
+                        "description": "The unique title of a book",
+                        "type": "string"
+                    },
+                    "author": 
+                    {
+                        "description": "Author(s) of book",
+                        "type": "array",
+                        "contains": 
+                        {
+                            "type": "string"
+                        },
+                        "minItems": 1,
+                        "uniqueItems": true
+                    },
+                    "medium": 
+                    {
+                        "type": "string",
+                        "minimum": 0
+                    },
+                    "pages": 
+                    {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "isbn":
+                    {
+                        "type": "string",
+                        "minimum": 0
+                    }                       
+                }
+            }
+        }
+    }
+}
