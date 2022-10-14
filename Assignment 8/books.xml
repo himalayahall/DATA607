@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
-
-<root>
+<b:books xmlns:b="urn:books">
 		<book>
 			<title>Thinking Fast and Slow</title>
 			<author>Daniel Kahneman</author>
@@ -8,7 +7,6 @@
 			<pages>499</pages>
 			<isbn>0374533555</isbn>
 		</book>
-
 		<book>
 			<title>Wolf Hall</title>
 			<author>Hilary Mantel</author>
@@ -16,7 +14,6 @@
 			<pages>640</pages>
 			<isbn>1250806712</isbn>
 		</book>
-
 		<book>
 			<title>Man-Eaters of Kumaon</title>
 			<author>Jim Corbett</author>
@@ -24,12 +21,11 @@
 			<pages>184</pages>
 			<isbn>8129140365</isbn>
 		</book>		
-
 		<book>
 			<title>All the Ways We Said Goodbye</title>
 			<author>Lauran Willig, Karen White</author>
 			<medium>Hardcover</medium>
 			<pages>448</pages>
 			<isbn>0062931091</isbn>
-		</book>		
-</root>
+		</book>	
+</b:books>
