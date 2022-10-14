@@ -36,7 +36,7 @@ library(htmltab)
     
 >Pick three of your favorite books on one of your favorite subjects. At least one of the books should have more
 than one author. For each book, include the title, authors, and two or three other attributes that you find
-interesting.  
+interesting.    
 Take the information that you’ve selected about these three books, and separately create three files which
 store the book’s information in HTML (using an html table), XML, and JSON formats (e.g. “books.html”,
 “books.xml”, and “books.json”). To help you better understand the different file structures, I’d prefer that you
@@ -62,7 +62,7 @@ Each book entry in the data set contains 3 books, each with 5 variables: title, 
         
 # JSON
 
-Let's use **jsonlite** to load the same data. As expected, the resulting data frame contains 5 observations. Furthermore, we observe *pages* variable is of *int* type. A nice verification that JSON data types have been correctly imported.
+Let's use **jsonlite** to load the same data. As expected, the resulting data frame contains 5 observations. Furthermore, we observe *pages* variable is of *int* type. A nice verification that JSON data types have been correctly imported. Multiple authors were modeled as a String Array in JSON and have been read in as comma-separated string. 4 observation of 5 variables. Not bad!
 
 ```{r}
 d <- jsonlite::fromJSON(txt = "https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.json", simplifyDataFrame = TRUE)
@@ -73,9 +73,9 @@ df_json2
 
 # XML
 
-Next, we load the same data in XML format and run into an immediate issue with multiple authors where the call to *xmlToDataFrame* fails. The XML file used in this step in [here] {https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books2.xml} and contains 2 *author* elements.  
+Next, we load the same data in XML format and run into an immediate issue with multiple authors; the call to *xmlToDataFrame* fails with an error indicating that multiple elements with the same name are not allowed. Note, the offending [XML](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books2.xml) contains 2 *author* elements.  
 
-To get around this issue we do the following - add second author using *author2* tag. As expected, the resulting data frame has an additional *author2* column. And the *pages* variable is of type *char*.
+To get around this issue we have two choices - (a) add second author using a new tag, e.g.*author2* or (b) add both authors as a single comma-separated string. Since a comma-separated string is similar to how above JSON was read in, that's what we will do. Note, the *pages* variable is of type *char*. 4 observation of 5 variables. 
 
 ```{r}
 book_data_xml <- xml2::read_xml("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xml")
@@ -85,14 +85,13 @@ str(df_xml)
 df_xml
 ```
 
-To correct the issue of type safety in XML documents one can leverage **XML Schema** (DTD or XSD). XML Schema is a very powerful mechanism for defining the structure of XML documents, type safety, namespace, etc  
+>To correct the issue of type safety in XML documents one can leverage **XML Schema** (DTD or XSD). XML Schema is a very powerful mechanism for defining the structure of XML documents, type safety, namespace, etc  
 
-For example, here is a basic [XSD](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd) for this assignment. Note, this schema describes the various XML elements, associated data types, cardinality, etc. This is just scrating the surface of what is possible through XSDs. The XSD can be used by validating XML parsers to check whether XML documents are well-formed and also to correctly parse elements and data types. Unfortunately, I have not (yet) been able to find a XML reader in R that leverages XSD to import correct data types.
+>For example, here is a basic [XSD](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd) for this assignment. Note, this schema describes the various XML elements, associated data types, cardinality, etc. This is just scrating the surface of what is possible through XSDs. The XSD can be used by validating XML parsers to check whether XML documents are well-formed and also to correctly parse elements and data types. Unfortunately, I have not (yet) been able to find a XML reader in R that leverages XSD to import correct data types.
 
 # HTML
 
-Finally, the same data is loaded in HTML format. Just like XML, we encounter an issue with duplicate authors. In this case the parsing succeeds but the data is corrupted - get name of second author is put in variable *medium* and the following variables are also corrupted.  
-
+Finally, the same data is loaded in HTML format. Just like the XML above, we encounter an issue with duplicate authors. Although this time the parsing completes, the data is corrupted - name of second author is put in the *medium* variable and variables further to the right are corrupted.  
 
 ```{r}
 df_html <- htmltab::htmltab(doc = "https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.html")
@@ -100,7 +99,7 @@ str(df_html)
 df_html
 ```
 
-To get around this issue we put names of both authors in same variable as comma-separated values. This is less than ideal but it works!
+To get around this issue, we follow the same strategy as with XML above and put author names as comma-separated values. 4 observation of 5 variables. It works!
 
 ```{r}
 df_html <- htmltab::htmltab(doc = "https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books2.html")
@@ -111,5 +110,5 @@ df_html
 
 # Conclusion
 
-We have loaded JSON, XML, and HTML data. All three are *self-describing* (human readable), hierarchical (nested structures), and supported by most programming languages. JSON is perhaps the most widely used format among the three and provides out of the box support for basic data types (string, integer, numeric, bool). And, although XMl/XSD is more powerful and has  greater support for type safety , it needs a lot more time and effort to bootstrap.
+We have loaded JSON, XML, and HTML data. All three are *self-describing* (human readable), hierarchical (nested structures), and supported by most programming languages. JSON is perhaps the most widely used format among the three and provides out of the box support for basic data types (string, integer, numeric, bool). And, although XML/XSD is more powerful and has greart support for data modeling and type safety, it needs much more time and effort to bootstrap.
 
