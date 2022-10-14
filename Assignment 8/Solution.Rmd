@@ -1,18 +1,18 @@
 ---
-title: "Assignment 8 - Working with XML and JSON in R"
+title: "Assignment - Working with XML and JSON in R"
 author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
   
-  pdf_document: 
-    toc: true
-    toc_depth: 3
-    number_sections: true
   html_document:
     
     toc: true
     toc_depth: 3
     toc_float: true
+    number_sections: true
+  pdf_document: 
+    toc: true
+    toc_depth: 3
     number_sections: true
 boxlinks: true
 urlcolor: blue
@@ -25,7 +25,6 @@ editor_options:
 
 ```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
 library(jsonlite)
 library(xml2)
 library(XML)
@@ -60,7 +59,7 @@ Each book entry in the data set contains 3 books, each with 5 variables: title, 
         "isbn": "0062931091"
       } 
         
-# JSON
+## JSON
 
 Let's use **jsonlite** to load the same data. As expected, the resulting data frame contains 5 observations. Furthermore, we observe *pages* variable is of *int* type. A nice verification that JSON data types have been correctly imported. Multiple authors were modeled as a String Array in JSON and have been read in as comma-separated string. 4 observation of 5 variables. Not bad!
 
@@ -71,7 +70,7 @@ str(df_json2)
 df_json2
 ```
 
-# XML
+## XML
 
 Next, we load the same data in XML format and run into an immediate issue with multiple authors; the call to *xmlToDataFrame* fails with an error indicating that multiple elements with the same name are not allowed. Note, the offending [XML](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books2.xml) contains 2 *author* elements.  
 
@@ -89,7 +88,7 @@ df_xml
 
 >For example, here is a basic [XSD](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd) for this assignment. Note, this schema describes the various XML elements, associated data types, cardinality, etc. This is just scrating the surface of what is possible through XSDs. The XSD can be used by validating XML parsers to check whether XML documents are well-formed and also to correctly parse elements and data types. Unfortunately, I have not (yet) been able to find a XML reader in R that leverages XSD to import correct data types.
 
-# HTML
+## HTML
 
 Finally, the same data is loaded in HTML format. Just like the XML above, we encounter an issue with duplicate authors. Although this time the parsing completes, the data is corrupted - name of second author is put in the *medium* variable and variables further to the right are corrupted.  
 
