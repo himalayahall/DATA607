@@ -30,6 +30,7 @@ library(jsonlite)
 library(xml2)
 library(XML)
 library(htmltab)
+library(jsonvalidate)
 ```
 
 # Assignment
@@ -49,26 +50,35 @@ accessible from the web]
 
 # Data
 
-Each book entry in the data set contains 3 books, each with 5 variables: title, author, medium, pages, and isbn. At least one book has 2 authors. For example:
-
->       {
-        "title": "All the Ways We Said Goodbye",
-        "author": "Lauran Willig",
-        "author": "Karen White",
-        "medium": "Hardcover",
-        "pages": 448,
-        "isbn": "0062931091"
-      } 
+Each book entry in the data set contains 3 books, each with 5 variables: title, author, medium, pages, and isbn. One book has 2 authors. JSON version of data is [here](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.json).
         
 ## JSON
 
-Let's use **jsonlite** to load the same data. As expected, the resulting data frame contains 5 observations. Furthermore, we observe *pages* variable is of *int* type. A nice verification that JSON data types have been correctly imported. Multiple authors were modeled as a String Array in JSON and have been read in as comma-separated string. 4 observation of 5 variables. Not bad!
+Let's use **jsonlite** to load the JSON version As expected, the resulting data frame contains 4 observation of 5 variables. Furthermore, we observe *pages* variable is of *int* type, nice verification that JSON data types have been correctly imported.  
+
+Multiple authors were modeled as a String Array in JSON and have been read in as comma-separated string. Not bad!
 
 ```{r}
 d <- jsonlite::fromJSON(txt = "https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.json", simplifyDataFrame = TRUE)
 df_json2 <- as.data.frame(d)
 str(df_json2)
 df_json2
+```
+
+### JSON Schema
+
+What about type-safety? It is easy to generate JSON but how can we be sure that the JSON we are trying to process is valid, that it contains all required attributes? 
+
+The answer is [JSON Schema](https://json-schema.org). Similar to XML Schema (see below) it is possible to define the schema of the JOSN that our application expects in the input. Both  producers and consumers of JSON can leverage the Schema as a guideline on how to validate their input/output. 
+
+Below we use a [Book schema](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books_schema.json) to validate the JSON input. Successful validation!
+
+```{r validate-json}
+raw_schema <- httr::GET("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books_schema.json") %>% 
+        httr::content()
+raw_json <- httr::GET("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.json")     %>% 
+        httr::content()
+jsonvalidate::json_validate(raw_json, raw_schema, verbose = TRUE)
 ```
 
 ## XML
@@ -85,9 +95,11 @@ str(df_xml)
 df_xml
 ```
 
+### XML Schema
+
 To address the issue of type safety in XML documents one can leverage **XML Schema** (DTD or XSD). XML Schema is a very powerful mechanism for defining the structure of XML documents, type safety, namespace, etc. For example, here is a basic [XSD](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd) for this assignment. Note, this schema describes the various XML elements, associated data types, cardinality, namespace, etc. This schema is just scratching the surface of what is possible. The XSD can be used by validating XML parsers to check whether XML documents are well-formed and also to correctly parse elements and data types.  
 
-Let's validate the XML document against the Schema XSD. Validation succeeds! 
+Let's validate the XML document against the [Book XSD](https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xsd). Validation succeeds! 
 
 ```{r validate-xml}
 doc <- read_xml("https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.xml", package = "xml2")
@@ -97,10 +109,9 @@ xsd <- read_xml("https://raw.githubusercontent.com/himalayahall/DATA607/main/Ass
 xml_validate(doc, xsd)
 ```
 
-
 ## HTML
 
-Finally, the same data is loaded in HTML format. Just like the XML above, we encounter an issue with duplicate authors. Although this time the parsing completes, the data is corrupted - name of second author is put in the *medium* variable and variables further to the right are corrupted.  
+Finally, the same data is loaded in HTML format. Just like the XML above, we encounter an issue with duplicate authors. Although this time the parsing completes, the data is corrupted - the name of second author is put into *medium* variable and variables further to the right are corrupted.  
 
 ```{r}
 df_html <- htmltab::htmltab(doc = "https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books.html")
@@ -108,7 +119,7 @@ str(df_html)
 df_html
 ```
 
-To get around this issue, we follow the same strategy as with XML above and put author names as comma-separated values. 4 observation of 5 variables. It works!
+To get around this issue, we follow the same strategy as with XML above, and put author names as comma-separated values. After doing that we get 4 observation of 5 variables. It works!
 
 ```{r}
 df_html <- htmltab::htmltab(doc = "https://raw.githubusercontent.com/himalayahall/DATA607/main/Assignment%208/books2.html")
