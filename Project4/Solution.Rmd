@@ -1,0 +1,126 @@
+---
+title: "Project 4"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output:
+  
+  pdf_document: 
+    toc: true
+    number_sections: true
+  html_document:
+    
+    toc: true
+    toc_float: true
+    number_sections: true
+boxlinks: true
+urlcolor: blue
+always_allow_html: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-libs}
+library(tidyverse)
+library(readtext)
+library(quanteda)
+library(quanteda.textplots)
+library(quanteda.textmodels)
+library(caret)
+```
+
+```{r set-seed}
+set.seed(1234)
+
+```
+
+```{r load-data}
+sms <- read.delim("SMSSpamCollection.txt", sep = '\t', col.names = c('cat', 'sms'), quote = "")
+```
+
+
+```{r create-corpus}
+corp_sms <- corpus(sms, text_field = "sms")
+```
+
+
+```{r}
+# Add numeric document id, used later to partition train/test sets
+corp_sms$id_numeric <- 1:ndoc(corp_sms)
+
+# tokenize
+toks_sms <- tokens(corp_sms, remove_punct = TRUE, remove_number = TRUE) %>%
+            tokens_remove(pattern = stopwords("en")) %>%
+            tokens_wordstem()
+
+# doc frequency matrix
+dfmat_sms <- dfm(toks_sms)
+dfmat_sms <- dfm_trim(dfmat_sms, min_docfreq = 25)
+topfeatures(dfmat_sms)
+```
+
+
+```{r}
+fcmat_sms <- fcm(dfmat_sms)
+topfeatures(dfmat_sms)
+```
+
+
+```{r}
+feat <- names(topfeatures(fcmat_sms, 100))
+fcmat_sms_select = fcm_select(fcmat_sms, pattern = feat, selection = "keep")
+
+size <- log(colSums(dfm_select(fcmat_sms, feat, selection = "keep")))
+
+textplot_network(fcmat_sms_select, min_freq = 0.5, vertex_size = size / max(size) * 3)
+```
+
+
+```{r}
+textplot_wordcloud(dfmat_sms, min_count = 10, max_words = 500, rotation = 0.1, color = "darkred")
+```
+
+
+```{r}
+corp_sms_sz <- length(docnames(corp_sms))
+
+# train with 80% data (20% reserved for testing)
+id_train <- sample(1:corp_sms_sz, corp_sms_sz * 0.75, replace = FALSE)
+head(id_train, 10)
+```
+
+
+```{r}
+dfmat_training <- dfm_subset(dfmat_sms, id_numeric %in% id_train)
+dfmat_test <- dfm_subset(dfmat_sms, !id_numeric %in% id_train)
+```
+
+
+```{r}
+tmod_nb <- textmodel_nb(dfmat_training, dfmat_training$cat)
+summary(tmod_nb)
+```
+
+```{r}
+dfmat_matched = dfm_match(dfmat_test, features = featnames(dfmat_training))
+```
+
+
+```{r}
+actual_class <- dfmat_matched$cat
+predicted_class <- predict(tmod_nb, newdata = dfmat_matched)
+tab_class <- table(actual_class, predicted_class)
+tab_class
+```
+
+Sensitivity (True positive rate) = (True Positive)/(True Positive + False Negative)
+Specificity = (True Negative)/(True Negative + False Positive)
+
+```{r}
+confusionMatrix(tab_class, mode = "everything", positive = "spam")
+
+```
+
