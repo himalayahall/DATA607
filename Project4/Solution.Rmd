@@ -23,6 +23,8 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Load library
+
 ```{r load-libs}
 library(tidyverse)
 library(readtext)
@@ -34,8 +36,9 @@ library(caret)
 
 ```{r set-seed}
 set.seed(1234)
-
 ```
+
+# Load data
 
 ```{r load-data}
 sms <- read.delim("SMSSpamCollection.txt", 
@@ -44,17 +47,21 @@ sms <- read.delim("SMSSpamCollection.txt",
                   quote = "")
 ```
 
+# Create corpus
 
 ```{r create-corpus}
 corp_sms <- corpus(sms, 
                    text_field = "sms")
 ```
 
+# Add numeric id to docs. This id will be leveraged later to partition corpus into training/test sets.
 
 ```{r}
-# Add numeric document id, used later to partition train/test sets
 corp_sms$id_numeric <- 1:ndoc(corp_sms)
+```
 
+# Tokenize
+```{r}
 # tokenize
 toks_sms <- tokens(corp_sms, 
                 remove_punct = TRUE, 
@@ -67,46 +74,56 @@ toks_sms <- tokens(corp_sms,
                         min_nchar = 2) %>%
             tokens_tolower(keep_acronyms = TRUE) %>%
             tokens_wordstem()
+```
 
-# doc frequency matrix
+# Creatr document frequency matrix
+```{r}
 dfm_sms <- dfm(toks_sms)
-dfm_sms <- dfm_trim(dfm_sms, 
-                    min_termfreq = 50)
+
+dfm_sms <- dfm_trim(dfm_sms, min_termfreq = 50)
+
 topfeatures(dfm_sms)
 ```
 
+# Create wordcloud
 
 ```{r}
 textplot_wordcloud(dfm_sms, 
                    max_words = 50, 
-                   rotation = 0.1, 
+                   rotation = 0.3, 
                    color = "darkred")
 ```
 
+# Generate textplot network
+
+Create feature co-occurance matrix
 
 ```{r}
 fcm_sms <- fcm(dfm_sms, 
                context = "document", 
                count = "frequency", 
                window = 5L)
-
-topfeatures(fcm_sms, 
-            n = 20, 
-            scheme = "docfreq")
 ```
 
+Identify top features.
 
 ```{r}
-feat <- names(topfeatures(fcm_sms, 
-                          n = 20, 
-                          scheme = "docfreq"))
+topfeat_sms <- topfeatures(fcm_sms, 
+                           n = 20, 
+                           scheme = "docfreq")
 
+topfeat_names <- names(topfeat_sms)
+```
+
+Generate textplot network
+
+```{r}
 fcm_sms_select = fcm_select(fcm_sms, 
-                            pattern = feat, 
+                            pattern = topfeat_names, 
                             selection = "keep")
 
 size <- log(colSums(dfm_select(dfm_sms, 
-                               feat, 
+                               topfeat_names, 
                                selection = "keep")))
 
 textplot_network(fcm_sms_select, 
@@ -114,6 +131,9 @@ textplot_network(fcm_sms_select,
                  vertex_size = size / max(size) * 3)
 ```
 
+# Generate model training data
+
+Random selection of doc IDs that will be used for training.
 
 ```{r}
 corp_sms_sz <- length(docnames(corp_sms))
@@ -123,15 +143,26 @@ id_train <- sample(1:corp_sms_sz, corp_sms_sz * 0.75, replace = FALSE)
 head(id_train, 10)
 ```
 
+Create training/test doc sets.
 
-```{r}
+```{r classification-setup}
 dfm_training <- dfm_subset(dfm_sms, id_numeric %in% id_train)
+
 dfm_test <- dfm_subset(dfm_sms, !id_numeric %in% id_train)
+
+# make sure test set has same feature set as training
+dfm_matched <- dfm_match(dfm_test, features = featnames(dfm_training))
+
+# actual class from test set
+actual_class <- dfm_matched$cat
 ```
 
 
-```{r}
+# Naive-Bayes Classifier
 
+Create classifier
+
+```{r naive-bayes-classifier}
 # Naive Bayes classifier for texts
 tmod_nb <- textmodel_nb(dfm_training, 
                         dfm_training$cat, 
@@ -139,24 +170,61 @@ tmod_nb <- textmodel_nb(dfm_training,
 summary(tmod_nb)
 ```
 
+Make predictions and print confusion matrix.
 
-```{r}
-dfm_matched <- dfm_match(dfm_test, features = featnames(dfm_training))
-```
+```{r nbc}
+nb_predicted_class <- predict(tmod_nb, newdata = dfm_matched)
 
+nb_tab_class <- table(actual_class, nb_predicted_class)
 
-```{r}
-actual_class <- dfm_matched$cat
-predicted_class <- predict(tmod_nb, newdata = dfm_matched)
-tab_class <- table(actual_class, predicted_class)
-tab_class
+confusionMatrix(nb_tab_class, mode = "everything", positive = "spam")
 ```
 
 Sensitivity (True positive rate) = (True Positive)/(True Positive + False Negative)
 Specificity = (True Negative)/(True Negative + False Positive)
 
-```{r}
-confusionMatrix(tab_class, mode = "everything", positive = "spam")
+# Regularized REgression Classifier
 
+Create Classifier
+
+```{r regularized-regression-classifier}
+library(glmnet)
+lasso <- cv.glmnet(x = dfm_training,
+                   y = as.integer(dfm_training$cat == "spam"),
+                   alpha = 1,
+                   nfold = 10,
+                   family = "binomial")
+
+#index_best <- which(lasso$lambda == lasso$lambda.min)
+#beta <- lasso$glmnet.fit$beta[, index_best]
+#head(sort(beta, decreasing = TRUE), 20)
+
+actual_class <- as.integer(dfm_matched$cat == "spam")
+predicted_class <- as.integer(predict(lasso, dfm_matched, type = "class"))
+tab_class <- table(actual_class, predicted_class)
+```
+
+Confusion matrix
+```{r rrc-confusion-matrix}
+confusionMatrix(tab_class, mode = "everything")
+```
+
+
+```{r}
+test_text <- c('Good afternoon. please call for prize 800-939-3903',
+               'hey, let meet for lunch',
+               'ok. i am watching here',
+               'i ate a slice but would prefer a pie',
+               'we appreciate it your call',
+               'we appreciate your winning bid. please call us again',
+              ' going once, going twice, will you be the lucky winner?',
+               'going once, going twice, will you be the lucky winner? call us to claim your prize',
+               'going once, going twice, will you be the lucky winner? call us to claim your prize at 800-393-3343')
+test_dfm <- test_text %>% 
+ dfm(tolower=TRUE, stem=TRUE, remove=stopwords("english"))
+dfmat_matched <- dfm_match(test_dfm, features = featnames(dfm_training))
+
+predict(tmod_nb, newdata = dfmat_matched)
+predict(lasso, dfmat_matched, type = "class", s = lasso$lambda.min)
 ```
 
