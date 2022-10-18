@@ -38,12 +38,16 @@ set.seed(1234)
 ```
 
 ```{r load-data}
-sms <- read.delim("SMSSpamCollection.txt", sep = '\t', col.names = c('cat', 'sms'), quote = "")
+sms <- read.delim("SMSSpamCollection.txt", 
+                  sep = '\t', 
+                  col.names = c('cat', 'sms'), 
+                  quote = "")
 ```
 
 
 ```{r create-corpus}
-corp_sms <- corpus(sms, text_field = "sms")
+corp_sms <- corpus(sms, 
+                   text_field = "sms")
 ```
 
 
@@ -52,66 +56,98 @@ corp_sms <- corpus(sms, text_field = "sms")
 corp_sms$id_numeric <- 1:ndoc(corp_sms)
 
 # tokenize
-toks_sms <- tokens(corp_sms, remove_punct = TRUE, remove_number = TRUE) %>%
-            tokens_remove(pattern = stopwords("en")) %>%
+toks_sms <- tokens(corp_sms, 
+                remove_punct = TRUE, 
+                remove_numbers = TRUE,
+                remove_symbols = TRUE, 
+                split_hyphens = TRUE) %>%
+            tokens_remove(pattern = c(stopwords("en"), "lt", "gt"),
+                        valuetype = "fixed",
+                        padding = FALSE, 
+                        min_nchar = 2) %>%
+            tokens_tolower(keep_acronyms = TRUE) %>%
             tokens_wordstem()
 
 # doc frequency matrix
-dfmat_sms <- dfm(toks_sms)
-dfmat_sms <- dfm_trim(dfmat_sms, min_docfreq = 25)
-topfeatures(dfmat_sms)
+dfm_sms <- dfm(toks_sms)
+dfm_sms <- dfm_trim(dfm_sms, 
+                    min_termfreq = 50)
+topfeatures(dfm_sms)
 ```
 
 
 ```{r}
-fcmat_sms <- fcm(dfmat_sms)
-topfeatures(dfmat_sms)
+textplot_wordcloud(dfm_sms, 
+                   max_words = 50, 
+                   rotation = 0.1, 
+                   color = "darkred")
 ```
 
 
 ```{r}
-feat <- names(topfeatures(fcmat_sms, 100))
-fcmat_sms_select = fcm_select(fcmat_sms, pattern = feat, selection = "keep")
+fcm_sms <- fcm(dfm_sms, 
+               context = "document", 
+               count = "frequency", 
+               window = 5L)
 
-size <- log(colSums(dfm_select(fcmat_sms, feat, selection = "keep")))
-
-textplot_network(fcmat_sms_select, min_freq = 0.5, vertex_size = size / max(size) * 3)
+topfeatures(fcm_sms, 
+            n = 20, 
+            scheme = "docfreq")
 ```
 
 
 ```{r}
-textplot_wordcloud(dfmat_sms, min_count = 10, max_words = 500, rotation = 0.1, color = "darkred")
+feat <- names(topfeatures(fcm_sms, 
+                          n = 20, 
+                          scheme = "docfreq"))
+
+fcm_sms_select = fcm_select(fcm_sms, 
+                            pattern = feat, 
+                            selection = "keep")
+
+size <- log(colSums(dfm_select(dfm_sms, 
+                               feat, 
+                               selection = "keep")))
+
+textplot_network(fcm_sms_select, 
+                 min_freq = 0.8, 
+                 vertex_size = size / max(size) * 3)
 ```
 
 
 ```{r}
 corp_sms_sz <- length(docnames(corp_sms))
 
-# train with 80% data (20% reserved for testing)
+# train with 75% data (25% reserved for testing)
 id_train <- sample(1:corp_sms_sz, corp_sms_sz * 0.75, replace = FALSE)
 head(id_train, 10)
 ```
 
 
 ```{r}
-dfmat_training <- dfm_subset(dfmat_sms, id_numeric %in% id_train)
-dfmat_test <- dfm_subset(dfmat_sms, !id_numeric %in% id_train)
+dfm_training <- dfm_subset(dfm_sms, id_numeric %in% id_train)
+dfm_test <- dfm_subset(dfm_sms, !id_numeric %in% id_train)
 ```
 
 
 ```{r}
-tmod_nb <- textmodel_nb(dfmat_training, dfmat_training$cat)
+
+# Naive Bayes classifier for texts
+tmod_nb <- textmodel_nb(dfm_training, 
+                        dfm_training$cat, 
+                        prior = "docfreq") # uniform, docfreq, termfreq
 summary(tmod_nb)
 ```
 
+
 ```{r}
-dfmat_matched = dfm_match(dfmat_test, features = featnames(dfmat_training))
+dfm_matched <- dfm_match(dfm_test, features = featnames(dfm_training))
 ```
 
 
 ```{r}
-actual_class <- dfmat_matched$cat
-predicted_class <- predict(tmod_nb, newdata = dfmat_matched)
+actual_class <- dfm_matched$cat
+predicted_class <- predict(tmod_nb, newdata = dfm_matched)
 tab_class <- table(actual_class, predicted_class)
 tab_class
 ```
