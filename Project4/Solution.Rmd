@@ -45,7 +45,18 @@ sms <- read.delim("SMSSpamCollection.txt",
                   sep = '\t', 
                   col.names = c('cat', 'sms'), 
                   quote = "")
+sms$id_numeric <- 1:nrow(sms)
 ```
+
+We can expect the SMS data to be  unbalanced, i.e. number of spam observations is in minority. Let's do a barplot to confirm.  
+
+```{r}
+barchart(sms$cat, horizontal = FALSE)
+```
+
+Indeed, the spam class is roughly 25% of all SMS messages. We will have to keep this in mind when we build classification models. For example, a model that does nothing more than **always** predict $ham$ will be roughly 75% accurate. In other words, given this data set our baseline *accuracy* is 75%. We will not use accuracy as a measure of model performance.  
+
+So how do we deal with severely imbalanced data sets? There are many techniques to address this issue including undersampling the majority class (undersampling ham), oversampling the minority class (oversampling spam), correct class imbalance by generating synthetic data (SMOTE is one such technique).
 
 # Create corpus
 
@@ -76,7 +87,8 @@ toks_sms <- tokens(corp_sms,
             tokens_wordstem()
 ```
 
-# Creatr document frequency matrix
+# Create document frequency matrix
+
 ```{r}
 dfm_sms <- dfm(toks_sms)
 
@@ -226,5 +238,10 @@ dfmat_matched <- dfm_match(test_dfm, features = featnames(dfm_training))
 
 predict(tmod_nb, newdata = dfmat_matched)
 predict(lasso, dfmat_matched, type = "class", s = lasso$lambda.min)
+```
+
+
+```{r}
+
 ```
 
