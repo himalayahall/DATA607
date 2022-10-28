@@ -4,15 +4,15 @@ author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
   
+  pdf_document: 
+    toc: true
+    toc_depth: 3
+    number_sections: true
   html_document:
     
     toc: true
     toc_depth: 3
     toc_float: true
-    number_sections: true
-  pdf_document: 
-    toc: true
-    toc_depth: 3
     number_sections: true
 boxlinks: true
 urlcolor: blue
@@ -23,43 +23,350 @@ editor_options:
 
 # Load libraries
 
-```{r setup}
+```{r setup, include=TRUE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(jsonlite)
-library(lubridate)
+library(assertive)   # for validating request parameters
 ```
 
-# Assignment
-    
-# Search terms
-```{r}
-nytSearchFunc <- function(api_name, search_terms = "", page = 1, begin_date = format(Sys.Date(), "%Y%m%d"), end_date = format(Sys.Date(), "%Y%m%d")){
-                        baseurl <- "https://api.nytimes.com/svc/search/v2/articlesearch.json?"
-                        if (!is_empty(search_terms)) {
-                            baseurl <- paste0(baseurl, search_terms, "&")
-                        }
-                        baseurl <- paste0(baseurl,
-                                    "begin_date=", begin_date,
-                                    "&end_date=", end_date,
-                                    "&page=", page,
-                                    "&api-key=","2mGra8XCfEhUdE4WxThgvyCs55BZLfLK", 
-                                    sep="")
-                         fromJSON(baseurl)
-                }
+# New York Time Books API Vignette
+
+In this solution we will use the New York Times [Books API](https://developer.nytimes.com/docs/books-product/1/overview) to retrieve information about The New York Times Best Sellers lists.  
+
+# Create R API
+
+Set the API Key in one place to make it easy to change.
+
+```{r api-access-key}
+API_KEY <- "2mGra8XCfEhUdE4WxThgvyCs55BZLfLK"
 ```
 
-```{r}
-res <- nytSearchFunc("foo", page = 1)
+Create utilities to facilitate development of API functions. These include URL encoding (to escape reserved characters), modifying URL placeholders, adding request parameters, and adding API access key.
+
+```{r utility-functions}
+
+#' Finalize URL. Add API access key top URL and URLEncode.
+#'
+#' @param url URL
+#' @param verbose - TRUE to print final URL.
+#' @returns URL with API access key and URL  encoding
+FinalizeUrl <- function(url, verbose = FALSE) {
+  if (str_detect(url, "\\?")) {
+    url <- paste0(url, "&")
+  } else {
+    url <- paste0(url, "?")
+  }
+  url <- paste0(url, "api-key=", API_KEY)
+  url <- URLencode(url)
+  if (verbose) {
+      print(url)
+  }
+  return (url)
+}
+
+#' URL component substitution and request parameter injection.
+#'
+#' @param url URL
+#' @param url_subs URL substitution dictionary. Keys are placeholders in the URL and values are substitution strings.
+#' @param req_params Request parameter dictionary. Keys are parameter names and values are parameter strings.
+#' @returns URL with URL substitutions and request parameters.
+#' @example AddReqParams("http://foo.com/{book}/index.json", c('{book}:'fiction'),c('param':'123'))
+AddReqParams <- function(url, url_subs = NULL, req_params = NULL) {
+  if (!is_empty(url_subs)) {
+    for (key in names(url_subs)) {
+      url <- str_replace(url, key, url_subs[key])
+    }
+  }
+
+  if (!is_empty(req_params)) {
+    first <- TRUE
+    for (key in names(req_params)) {
+      if (first) {
+        url <- paste0(url, "?")
+        first <- FALSE
+      } else {
+        url <- paste0(url, "&")
+      }
+      url <- paste0(url, key, "=", req_params[key])
+    }
+  }
+  return (url)
+}
+
+#' URL component substitution, request parameter injection, API key injection, and URL encoding.
+#'
+#' @param url URL
+#' @param url_subs URL substitution dictionary. Keys are placeholders in the URL and values are substitution strings.
+#' @param req_params Request parameter dictionary. Keys are parameter names and values are parameter strings.
+#' @returns URL with URL substitutions and request parameters.
+#' @example AddReqParamsAndFinalize("http://foo.com/{book}/index.json", c('{book}:'fiction'),c('key':'123'))
+AddReqParamsAndFinalize <- function(url, url_subs = NULL, req_params = NULL) {
+  url <- AddReqParams(url, url_subs, req_params)
+  url <- FinalizeUrl(url)
+  return (url)
+}
 ```
 
+API endpoints.
 
-```{r}
-              )
-x <- fromJSON("https://api.nytimes.com/svc/mostpopular/v2/viewed/7.json?api-key=2mGra8XCfEhUdE4WxThgvyCs55BZLfLK", flatten = TRUE) %>% data.frame()
+```{r api-endpoints}
+BOOKS_API_VERSION <- "v3"
+
+BOOKS_API_BASE_URL <- paste0("https://api.nytimes.com/svc/books", "/", BOOKS_API_VERSION)
+
+BOOKS_API_LIST_NAMES_URL <- paste0(BOOKS_API_BASE_URL, "/lists/names.json")
+
+BOOKS_API_LIST_URL <- paste0(BOOKS_API_BASE_URL, "/lists.json")
+
+BOOKS_API_LIST_BYDATE_URL <- paste0(BOOKS_API_BASE_URL, "/lists/{date}/{list}.json")
+
+BOOKS_API_HISTORY_URL <- paste0(BOOKS_API_BASE_URL, "/lists/best-sellers/history.json")
+
+BOOKS_API_OVERVIEW_URL <- paste0(BOOKS_API_BASE_URL, "/lists/overview.json")
+
+BOOKS_API_FULL_OVERVIEW_URL <- paste0(BOOKS_API_BASE_URL, "/lists/full-overview.json")
+```
+
+API functions. Each function encapsulates one New York Times Books API and the required and optional parameters.
+
+```{r api-functions}
+
+#' Get Best Seller List names.
+#'
+#' https://developer.nytimes.com/docs/books-product/1/routes/lists/names.json/get
+API.GetNames <- function(verbose = FALSE) {
+  url <- FinalizeUrl(BOOKS_API_LIST_NAMES_URL,verbose)
+  o <- fromJSON(url)
+  return (o)
+}
+
+#' Get Best Seller List.
+#'
+#' https://developer.nytimes.com/docs/books-product/1/routes/lists.json/get
+API.GetNamedList <- function(list_name, bestsellers_date = NULL, published_date = NULL, offset = NULL, verbose = FALSE) {
+  url <- BOOKS_API_LIST_URL
+
+  params <- c("list" = list_name)
+
+  if (!is_empty(bestsellers_date)) {
+    params["bestsellers-date"] <- bestsellers_date
+  }
+
+  if (!is_empty(published_date)) {
+    params["published-date"] <- published_date
+  }
+
+  if (!is_empty(offset)) {
+    assert_all_are_divisible_by(offset, 20) # must be multiple of 20
+    params["offset"] <- str(offset)
+  }
+
+  url <- AddReqParams(url, NULL, params)
+  url <- FinalizeUrl(url, verbose)
+  o <- fromJSON(url)
+  return (o)
+}
+
+#' Get Best Seller list
+#'
+#' https://developer.nytimes.com/docs/books-product/1/routes/lists/%7Bdate%7D/%7Blist%7D.json/get
+API.GetListByDate <- function(list_date = "current", list_name, offset = NULL, verbose = FALSE) {
+  url <- BOOKS_API_LIST_BYDATE_URL
+
+  url_subs <- c("\\{date\\}" = list_date, "\\{list\\}" = list_name)
+
+  params <- c()
+  if (!is_empty(offset)) {
+    assert_all_are_divisible_by(offset, 20) # must be multiple of 20
+    params["offset"] <- str(offset)
+  }
+
+  url <- AddReqParams(url, url_subs, params)
+  url <- FinalizeUrl(url, verbose)
+  o <- fromJSON(url)
+  return (o)
+}
+
+#' Get Best Seller list history.
+#'
+#' https://developer.nytimes.com/docs/books-product/1/routes/lists/best-sellers/history.json/get
+API.GetHistory <- function(age_group = NULL, 
+                           author = NULL, 
+                           contributor = NULL, 
+                           isbn = NULL, 
+                           offset = NULL, 
+                           price = NULL, 
+                           publisher = NULL, 
+                           title = NULL, 
+                           verbose = FALSE) {
+  url <- BOOKS_API_HISTORY_URL
+
+  params <- c()
+
+  if (!is_empty(age_group)) {
+    params["age-group"] <- age_group
+  }
+
+  if (!is_empty(author)) {
+    params["author"] <- author
+  }
+
+  if (!is_empty(contributor)) {
+    params["contributor"] <- contributor
+  }
+
+  if (!is_empty(isbn)) {
+    params["isbn"] <- isbn
+  }
+
+  if (!is_empty(offset)) {
+    assert_all_are_divisible_by(offset, 20) # must be multiple of 20
+    params["offset"] <- offset
+  }
+
+  if (!is_empty(price)) {
+    params["price"] <- price
+  }
+
+  if (!is_empty(age_group)) {
+    params["age-group"] <- age_group
+  }
+
+  if (!is_empty(publisher)) {
+    params["publisher"] <- publisher
+  }
+
+  if (!is_empty(title)) {
+    params["title"] <- title
+  }
+
+  url <- AddReqParams(url, NULL, params)
+  url <- FinalizeUrl(url, verbose)
+  o <- fromJSON(url)
+  return (o)
+}
+
+#' Get all books for all the Best Sellers lists for specified date.
+#'
+#' https://developer.nytimes.com/docs/books-product/1/routes/lists/full-overview.json/get
+API.GetFullOverview <- function(published_date = NULL, verbose = FALSE) {
+  url <- BOOKS_API_FULL_OVERVIEW_URL
+
+  params <- c()
+  if (!is_empty(published_date)) {
+    params["published_date"] <- published_date
+  }
+
+  url <- AddReqParams(url, NULL, params)
+  url <- FinalizeUrl(url, verbose)
+  o <- fromJSON(url)
+  return (o)
+}
+
+#' Get all books for all the Best Sellers lists for specified date.
+#'
+#' https://developer.nytimes.com/docs/books-product/1/routes/lists/overview.json/get
+API.GetOverview <- function(published_date = NULL, verbose = FALSE) {
+  url <- BOOKS_API_OVERVIEW_URL
+
+  params <- c()
+  if (!is_empty(published_date)) {
+    params["published_date"] <- published_date
+  }
+
+  url <- AddReqParams(url, NULL, params)
+  url <- FinalizeUrl(url, verbose)
+  o <- fromJSON(url)
+  return (o)
+}
 
 ```
 
-```{r}
+# API Test
+
+Time to put the APIs through their paces!  
+
+## Names of all Best Seller lists
+
+```{r best-seller-list-names}
+ret <- API.GetNames(verbose = TRUE)
+if (ret$status == "OK") {
+    #str(ret)
+    head(ret$results, n = 2)
+}
+```
+
+## Best Seller list 
+
+Get list `Advice How-To and Miscellaneous`. List name has features (whitespace, `-`) that test URL encoding.
+
+```{r best-seller-list-1}
+ret <- API.GetNamedList(list_name = 'Advice How-To and Miscellaneous', verbose = TRUE)
+if (ret$status == "OK") {
+    #str(ret)
+    head(ret$results, n = 2)
+}
+```
+
+## Best Seller list by date
+
+```{r best-seller-list-2}
+ret <- API.GetListByDate(list_name = 'education', verbose = TRUE)
+if (ret$status == "OK") {
+    #str(ret)
+    head(ret$results$books, n = 2)
+}
+```
+
+## Best Seller list history
+
+### By age group
+
+```{r best-seller-list-history-1}
+ret <- API.GetHistory(age_group = 15, verbose = TRUE)
+if (ret$status == "OK") {
+    #str(ret)
+    head(ret$results, n = 2)
+}
+```
+
+### By age group and publisher
+
+```{r best-seller-list-history-2}
+ret <- API.GetHistory(age_group = 15, publisher = 'Bloomsbury', verbose = TRUE)
+if (ret$status == "OK") {
+    #str(ret)
+    head(ret$results)
+}
+```
+
+### By publisher and price
+
+```{r best-seller-list-history-3}
+ret <- API.GetHistory(publisher = 'HarperCollins', verbose = TRUE)
+if (ret$status == "OK") {
+    #str(ret)
+    head(ret$results, n = 2)
+}
+```
+
+### By publisher and offset (offset must be a multiple of 20)
+
+```{r best-seller-list-history-4}
+ret <- API.GetHistory(publisher = 'HarperCollins', offset = 20, verbose = TRUE)
+if (ret$status == "OK") {
+    #str(ret)
+    head(ret$results, n = 2)
+}
+```
+
+## All books for all the Best Sellers lists for specified date
+
+```{r best-seller-list-overview}
+ret <- API.GetOverview(published_date = '2013-05-15', verbose = TRUE)
+if (ret$status == "OK") {
+    print(ret$num_results)
+}
 ```
 
