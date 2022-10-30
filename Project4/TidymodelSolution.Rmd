@@ -1,0 +1,213 @@
+---
+title: "Project 4"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output:
+  
+  pdf_document: 
+    toc: true
+    number_sections: true
+  html_document:
+    
+    toc: true
+    toc_float: true
+    number_sections: true
+boxlinks: true
+urlcolor: blue
+always_allow_html: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load library
+
+```{r load-libs}
+library(tidyverse)
+library(tidymodels)
+library(parsnip)
+library(textrecipes)
+library(readtext)
+library(doParallel)
+library(xgboost)
+library(keras)
+library(tensorflow)
+
+```
+
+```{r set-seed}
+set.seed(1234)
+```
+
+# Load data
+
+```{r load-data}
+sms <- read.delim("SMSSpamCollection.txt", 
+                  sep = '\t', 
+                  col.names = c('cat', 'sms'), 
+                  quote = "")
+sms <- sms %>% mutate(cat = factor(cat))
+glimpse(sms)
+```
+
+We can expect the SMS data to be  unbalanced, i.e. number of spam observations is a minority class. Proportion of spam observations is 13.4%. 
+
+```{r}
+sms %>% 
+  count(cat) %>% 
+  mutate(prop = n/sum(n))
+```
+
+```{r}
+sms <- sms %>%
+    mutate(target = ifelse(cat == "ham", 0, 1)) %>%
+    mutate(target = as.numeric(target)) %>%
+    select(-cat)
+
+glimpse(sms)
+```
+
+
+```{r}
+DT::datatable(sms %>%
+              count(target),
+         extensions = c('FixedColumns',"FixedHeader"),
+          options = list(scrollX = TRUE,
+                         paging=TRUE,
+                         fixedHeader=TRUE))
+```
+
+```{r}
+sms <- sms %>%
+  mutate(sms = str_remove_all(sms, pattern = "[:digit:]")) %>%
+  mutate(sms = str_remove_all(sms, pattern = "[:punct:]")) %>%
+  mutate(sms = str_remove_all(sms, pattern = "[\n]")) %>%
+  mutate(sms = str_to_lower(sms))
+glimpse(sms)
+```
+
+Verify splits have the same proportion of ham/spam as original data set. As we see, the training and test splits have exactly the same proportion as original.
+
+```{r}
+sms_split <- sms %>% 
+    initial_split()
+sms_train<- training(sms_split)
+sms_test<- testing(sms_split)
+
+# training set proportions by category
+sms_train %>% 
+  count(target) %>% 
+  mutate(prop = n/sum(n))
+
+# test set proportions by category
+sms_test  %>% 
+  count(target) %>% 
+  mutate(prop = n/sum(n))
+```
+
+```{r}
+sms_train %>%
+  mutate(n_words = tokenizers::count_words(sms)) %>%
+  ggplot(aes(n_words)) +
+  geom_bar() +
+  labs(x = "Number of words per sms",
+       y = "Number of sms")
+```
+
+
+```{r}
+max_words <- 20000
+max_length <- 60
+
+sms_rec <- recipe( ~ sms, data = sms_train) %>%
+        step_tokenize(sms) %>%
+        step_tokenfilter(sms, max_tokens = max_words) %>%
+        step_sequence_onehot(sms, sequence_length = max_length)
+
+sms_rec
+#prep(sms_rec) %>% bake(new_data = NULL, composition = "matrix")
+```
+
+
+```{r}
+sms_prep <-  prep(sms_rec)
+sms_baked <- bake(sms_prep, new_data = NULL, composition = "matrix")
+dim(sms_baked)
+```
+
+```{r}
+dense_model <- keras_model_sequential() %>%
+    layer_embedding(input_dim = max_words + 1,
+                    output_dim = 12,
+                    input_length = max_length) %>%
+    layer_flatten() %>%
+    layer_dense(units = 32, activation = "relu") %>%
+    layer_dense(units = 1, activation = "sigmoid")
+
+dense_model
+```
+
+```{r}
+dense_model %>% compile(
+  optimizer = "adam",
+  loss = "binary_crossentropy",
+  metrics = c('accuracy'),       # tf$keras$metrics
+)
+```
+
+
+```{r}
+dense_history <- dense_model %>%
+  fit(
+    x = sms_baked,
+    y = sms_train$target,
+    #batch_size = 32,
+    epochs = 10,
+    validation_split = 0.25,
+    verbose = TRUE
+  )
+```
+
+```{r}
+plot(dense_history)
+```
+
+
+```{r}
+keras_predict <- function(model, baked_data, response) {
+  predictions <- predict(model, baked_data)[, 1]
+  tibble(
+    .pred_1 = predictions,
+    .pred_class = if_else(.pred_1 < 0.5, 0, 1),
+    target = response
+  ) %>%
+    mutate(across(c(target, .pred_class),            ## create factors
+                  ~ factor(.x, levels = c(1, 0))))  ## with matching levels
+}
+```
+
+
+```{r}
+target_test <- bake(sms_prep, new_data = sms_test,
+                  composition = "matrix")
+test_pred <- keras_predict(dense_model, target_test, sms_test$target)
+test_pred %>% metrics(target, .pred_class, .pred_1)
+```
+
+
+```{r}
+metrics(test_pred, target, .pred_class)
+
+```
+
+
+```{r}
+test_pred %>%
+  conf_mat(target, .pred_class) %>%
+  autoplot(type = "heatmap", "foo")
+
+```
+
