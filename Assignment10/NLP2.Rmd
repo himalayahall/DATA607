@@ -1,0 +1,163 @@
+---
+title: "Assignment 10 - Sentiment Analysis"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output:
+  
+  pdf_document: 
+    toc: true
+    toc_depth: 3
+    number_sections: true
+  html_document:
+    
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+boxlinks: true
+urlcolor: blue
+always_allow_html: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Load libraries
+
+```{r setup, include=TRUE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidytext)
+library(textdata)
+
+library(syuzhet)
+library(hcandersenr)
+
+```
+
+# Introduction
+
+Select fairy tales written by Hans Christian Andersen, available in the [hcandersenr] (<https://CRAN.R-project.org/package=hcandersenr>) package.
+
+Notice, there are no chapters in these short stories. Furthermore, number (span) of sentences used for sentiment trend analysis will be shorter than span for novels.
+
+Use [Syuzhet](https://cran.r-project.org/web/packages/syuzhet/vignettes/syuzhet-vignette.html) sentiment lexicon.
+
+
+```{r}
+tidy_books <- hcandersen_en %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, 
+                                regex("^chapter [\\divxlc]", 
+                                      ignore_case = TRUE)))) %>%
+    ungroup() %>%
+    unnest_tokens(word, text)
+
+tidy_books
+```
+
+Load 'The fir tree'.
+
+```{r}
+the_fir_tree <- tidy_books %>% 
+  filter(book == "The fir tree")
+
+the_fir_tree
+```
+
+Since the story is short (253 sentences) we expect the sentiment to fluctuate (if at all) within a short span of sentences. Whereas in novels of Jane Austen we considered sentence spans of length 80, here we will use shorted runs.
+
+```{r}
+ hcandersen_en %>% filter(book == 'The fir tree')
+
+```
+
+```{r}
+sent_run_length <- 10
+
+afinn <- the_fir_tree %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  group_by(index = linenumber %/% sent_run_length) %>% 
+  summarise(sentiment = sum(value)) %>% 
+  mutate(method = "AFINN")
+
+bing_and_nrc <- bind_rows(
+  the_fir_tree %>% 
+    inner_join(get_sentiments("bing")) %>%
+    mutate(method = "Bing et al."),
+  the_fir_tree %>% 
+    inner_join(get_sentiments("nrc") %>% 
+                 filter(sentiment %in% c("positive", 
+                                         "negative"))
+    ) %>%
+    mutate(method = "NRC")) %>%
+  count(method, index = linenumber %/% sent_run_length, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+
+```
+
+
+```{r}
+syuzhet <- the_fir_tree %>% 
+  inner_join(get_sentiment_dictionary()) %>% 
+  group_by(index = linenumber %/% sent_run_length) %>% 
+  summarise(sentiment = sum(value)) %>% 
+  mutate(method = "SYUZHET")
+
+glimpse(syuzhet)
+```
+
+```{r}
+bind_rows(afinn, 
+          bing_and_nrc, syuzhet) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+
+```{r}
+#c('Aunty', 'The windmill', 'Moving day', 'Two brothers', 'The jewish girl', #'Heartache', 'Twelve by the mail', 'The old church bell', 'The fir tree')
+books <- c('Aunty', 'The windmill', 'Moving day', 'Two brothers', 'The fir tree')
+
+tidy_books <- hcandersen_en %>%
+  filter(book %in% books) %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, 
+                                regex("^chapter [\\divxlc]", 
+                                      ignore_case = TRUE)))) %>%
+    ungroup() %>%
+    unnest_tokens(word, text)
+
+hca_sentiment <- tidy_books %>%
+  inner_join(get_sentiment_dictionary()) %>% 
+  mutate(sentiment = value) %>%
+  select(-value) %>%
+  count(book, index = linenumber %/% sent_run_length, sentiment) #%>%
+  #pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) 
+
+```
+
+```{r}
+ggplot(hca_sentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 1, scales = "free_x")
+```
+
+```{r}
+library(wordcloud)
+
+tidy_books %>%
+  anti_join(stop_words) %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100, scale = c(2.5, 0.25)))
+```
+
+# Citations
+Code used in this Rmd has been sourced from the [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book Text Mining with R by Juilia Silge and David Robinson.
