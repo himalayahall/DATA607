@@ -43,13 +43,17 @@ Copilot uses AI to suggest code and entire functions across a wide variety of la
 
 Copilot integrates with IDEs and provides inp-line code suggestions. For example, when a python developer starts defining a function, Copilot suggests the function body. Notice, in this case the code is suggested based simply on the function name. Since Copilot has seen billions of lines of code and good developers use established naming conventions it is able to make highly relevant code suggestions.
 
-![f](/Users/jawaidhakim/Downloads/CUNY/DATA607/Copilot/Previous.png)
+
+![](/Users/jawaidhakim/Downloads/CUNY/DATA607/Copilot/Previous.png)
+
 
 It can make a number of suggestions and developer can see them by clicking Next in VS Code:
 
-![f](/Users/jawaidhakim/Downloads/CUNY/DATA607/Copilot/Next.png) When developer sees a suggestion that's to her liking she clicks Accept:
 
-![f](/Users/jawaidhakim/Downloads/CUNY/DATA607/Copilot/Accept.png)
+![](/Users/jawaidhakim/Downloads/CUNY/DATA607/Copilot/Next.png) When developer sees a suggestion that's to her liking she clicks Accept:
+
+
+![](/Users/jawaidhakim/Downloads/CUNY/DATA607/Copilot/Accept.png)
 
 # Reverse Engineer
 
@@ -59,8 +63,13 @@ You have to signup to use Copilot. Signup requires a Github account. Once signed
 
 I tried using VS Code with R but it is not a stable development environment. The Copilot component was working fine though and it was suggesting R code snippets as I was coding. Other development environments, like Python with VS Code, are more robust. Here is a Jupyter Notebook, where I entered the name of a function (sort_array) and parameter type hint (str) and Copilot suggested the function body. Based on my hints the Copilot suggestion was astonishing:
 
-![f](/Users/jawaidhakim/Downloads/CUNY/DATA607/Copilot/jupyternotebook.png) \## Improvement
 
-Copilot is an astonishing display of using NLP to build a cool developer productivity service. I can see a service like Copilot becoming an essential and ubiquitous part of a developer's toolkit. Although Copilot is owned by Microsoft, hence early integrations with VS Code and Visual Studio, one hopes that the service will eventually integrate with a wider set of IDEs (e.g. RStudio, Eclipse).
+![](/Users/jawaidhakim/Downloads/CUNY/DATA607/Copilot/jupyternotebook.png)
 
-Copilot needs to provide greater transparency of exactly what are being scanned for training the AI model, potential security holes [[CCS]](https://cyber.nyu.edu/2021/10/15/ccs-researchers-find-github-copilot-generates-vulnerable-code-40-of-the-time/) and copyright issues [[FOSSA]](https://fossa.com/blog/analyzing-legal-implications-github-copilot/), etc.
+## Improvement
+>Include specific recommendations about how to improve the site's recommendation capabilities going forward
+
+Copilot is an astonishing display of using NLP to build a cool developer productivity service. I can see a service like Copilot becoming an essential and ubiquitous part of a developer's toolkit. Although Copilot is owned by Microsoft, hence early integrations with VS Code and Visual Studio, one hopes that the service will eventually integrate with a wider set of IDEs (e.g. RStudio, Eclipse).    
+Another obvious extension for Copilot would be in areas of static code analysis, code style checking, security audits, and code reviews. 
+
+Finally, Copilot needs to provide greater transparency of exactly what are being scanned for training the AI model, potential security holes [[CCS]](https://cyber.nyu.edu/2021/10/15/ccs-researchers-find-github-copilot-generates-vulnerable-code-40-of-the-time/) and copyright issues [[FOSSA]](https://fossa.com/blog/analyzing-legal-implications-github-copilot/), etc.
