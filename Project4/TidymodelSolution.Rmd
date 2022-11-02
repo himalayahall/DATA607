@@ -31,10 +31,6 @@ library(tidymodels)
 library(parsnip)
 library(textrecipes)
 library(readtext)
-library(doParallel)
-library(xgboost)
-library(keras)
-library(tensorflow)
 
 ```
 
@@ -45,68 +41,67 @@ set.seed(1234)
 # Load data
 
 ```{r load-data}
-sms <- read.delim("SMSSpamCollection.txt", 
+df <- read.delim("SMSSpamCollection.txt", 
                   sep = '\t', 
                   col.names = c('cat', 'sms'), 
                   quote = "")
-sms <- sms %>% mutate(cat = factor(cat))
-glimpse(sms)
+glimpse(df)
 ```
 
 We can expect the SMS data to be  unbalanced, i.e. number of spam observations is a minority class. Proportion of spam observations is 13.4%. 
 
 ```{r}
-sms %>% 
+df %>% 
   count(cat) %>% 
   mutate(prop = n/sum(n))
 ```
 
-```{r}
-sms <- sms %>%
-    mutate(target = ifelse(cat == "ham", 0, 1)) %>%
-    mutate(target = as.numeric(target)) %>%
-    select(-cat)
 
-glimpse(sms)
+```{r}
+df <- df %>%
+    mutate(target = ifelse(cat == "ham", 0, 1)) %>%
+    mutate(cat = as.factor(cat)) %>%
+    mutate(n_words = tokenizers::count_words(sms))
+    
+glimpse(df)
 ```
 
 
 ```{r}
-DT::datatable(sms %>%
-              count(target),
-         extensions = c('FixedColumns',"FixedHeader"),
-          options = list(scrollX = TRUE,
+df %>% 
+  count(cat) %>% 
+  mutate(prop = n/sum(n))
+```
+
+
+```{r}
+DT::datatable(df %>%
+              count(cat),
+                extensions = c('FixedColumns',"FixedHeader"),
+            options = list(scrollX = TRUE,
                          paging=TRUE,
                          fixedHeader=TRUE))
 ```
 
-```{r}
-sms <- sms %>%
-  mutate(sms = str_remove_all(sms, pattern = "[:digit:]")) %>%
-  mutate(sms = str_remove_all(sms, pattern = "[:punct:]")) %>%
-  mutate(sms = str_remove_all(sms, pattern = "[\n]")) %>%
-  mutate(sms = str_to_lower(sms))
-glimpse(sms)
-```
 
-Verify splits have the same proportion of ham/spam as original data set. As we see, the training and test splits have exactly the same proportion as original.
+Verify train/test splits have the same proportion of ham/spam as original data set. As we see, the training and test splits have the same proportion as original.
 
 ```{r}
-sms_split <- sms %>% 
-    initial_split()
-sms_train<- training(sms_split)
-sms_test<- testing(sms_split)
+sms_split <- initial_split(df, strata = cat)
+sms_train <- training(sms_split)
+sms_test <- testing(sms_split)
 
 # training set proportions by category
 sms_train %>% 
-  count(target) %>% 
+  count(cat) %>% 
   mutate(prop = n/sum(n))
 
 # test set proportions by category
 sms_test  %>% 
-  count(target) %>% 
+  count(cat) %>% 
   mutate(prop = n/sum(n))
 ```
+
 
 ```{r}
 sms_train %>%
@@ -119,95 +114,73 @@ sms_train %>%
 
 
 ```{r}
-max_words <- 20000
+max_words <- 10000
 max_length <- 60
+```
 
-sms_rec <- recipe( ~ sms, data = sms_train) %>%
-        step_tokenize(sms) %>%
-        step_tokenfilter(sms, max_tokens = max_words) %>%
-        step_sequence_onehot(sms, sequence_length = max_length)
 
+```{r}
+library(themis)
+sms_recipe <- recipe(cat ~ sms, data = sms_train) %>%
+                step_tokenize(sms, options = list(lowercase = TRUE, strip_punct = TRUE)) %>%
+                step_stopwords(sms) %>%
+                step_tokenfilter(sms, max_tokens = max_words, min_times = 10) %>%
+                step_tfidf(sms) %>%
+                step_downsample(cat, under_ratio = 2)
 sms_rec
-#prep(sms_rec) %>% bake(new_data = NULL, composition = "matrix")
 ```
 
 
 ```{r}
-sms_prep <-  prep(sms_rec)
-sms_baked <- bake(sms_prep, new_data = NULL, composition = "matrix")
-dim(sms_baked)
-```
-
-```{r}
-dense_model <- keras_model_sequential() %>%
-    layer_embedding(input_dim = max_words + 1,
-                    output_dim = 12,
-                    input_length = max_length) %>%
-    layer_flatten() %>%
-    layer_dense(units = 32, activation = "relu") %>%
-    layer_dense(units = 1, activation = "sigmoid")
-
-dense_model
-```
-
-```{r}
-dense_model %>% compile(
-  optimizer = "adam",
-  loss = "binary_crossentropy",
-  metrics = c('accuracy'),       # tf$keras$metrics
-)
+library(discrim)
+model <- rand_forest() %>%
+  set_mode("classification") %>%
+  set_engine(engine = "ranger", importance = "impurity")
+model
 ```
 
 
 ```{r}
-dense_history <- dense_model %>%
-  fit(
-    x = sms_baked,
-    y = sms_train$target,
-    #batch_size = 32,
-    epochs = 10,
-    validation_split = 0.25,
-    verbose = TRUE
+sms_wf <- workflow() %>%
+            add_recipe(sms_recipe) %>%
+            add_model(model)
+sms_wf
+```
+
+
+```{r}
+sms_folds <- vfold_cv(sms_train)
+sms_folds
+```
+
+
+```{r}
+#sms_fit <- sms_wf %>%
+#        fit(data = sms_train)
+```
+
+
+```{r}
+final_fitted <- last_fit(sms_wf, sms_split)
+```
+
+
+```{r}
+collect_predictions(final_fitted) %>%
+  conf_mat(truth = cat, estimate = .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+
+```{r}
+collect_predictions(final_fitted)  %>%
+  roc_curve(truth = cat, .pred_ham) %>%
+  autoplot() +
+  labs(
+    color = NULL,
+    title = "ROC curve for classification of SMS messages into ham/spam",
+    subtitle = "With final tuned lasso regularized classifier on the test set"
   )
 ```
 
-```{r}
-plot(dense_history)
-```
-
-
-```{r}
-keras_predict <- function(model, baked_data, response) {
-  predictions <- predict(model, baked_data)[, 1]
-  tibble(
-    .pred_1 = predictions,
-    .pred_class = if_else(.pred_1 < 0.5, 0, 1),
-    target = response
-  ) %>%
-    mutate(across(c(target, .pred_class),            ## create factors
-                  ~ factor(.x, levels = c(1, 0))))  ## with matching levels
-}
-```
-
-
-```{r}
-target_test <- bake(sms_prep, new_data = sms_test,
-                  composition = "matrix")
-test_pred <- keras_predict(dense_model, target_test, sms_test$target)
-test_pred %>% metrics(target, .pred_class, .pred_1)
-```
-
-
-```{r}
-metrics(test_pred, target, .pred_class)
-
-```
-
-
-```{r}
-test_pred %>%
-  conf_mat(target, .pred_class) %>%
-  autoplot(type = "heatmap", "foo")
-
-```
 
