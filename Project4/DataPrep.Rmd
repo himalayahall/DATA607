@@ -1,0 +1,86 @@
+---
+title: "DataPrep.Rmd"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readtext)
+library(stringi)
+library(textclean)
+```
+
+```{r}
+easy_ham_folders <- c('./ham_spam_dataset/easy_ham/', './ham_spam_dataset/easy_ham 2/', './ham_spam_dataset/easy_ham_2/')
+hard_ham_folders <- c('./ham_spam_dataset/hard_ham/', './ham_spam_dataset/hard_ham 2/')
+
+all_ham_folders <- easy_ham_folders
+all_ham_folders <- append(all_ham_folders, hard_ham_folders)
+
+spam_folders <- c('./ham_spam_dataset/spam/', './ham_spam_dataset/spam 2/', './ham_spam_dataset/spam_2/', './ham_spam_dataset/spam_2 2')
+
+```
+
+```{r}
+library(stringi)
+
+ReadAndCleanEmail <- function(path) {
+        print(path)
+        
+        con <- file(path, encoding = 'UTF-8')
+        lines <- readLines(con, skipNul = TRUE)
+        close(con = con)
+        
+        skip <- TRUE
+        filtered <- ' '
+        for (l in lines) {
+            if (skip && l == "") {
+                skip = FALSE
+            } else  if (! skip) {
+                filtered <- paste0(filtered, stri_enc_toascii(l))
+                #print(paste0("***: ", skip, ", ", l))
+            }
+        }
+        return(filtered)
+}
+
+ReadEmails <- function(folders, category) {
+    result <- tibble(email_src = c(''), cat = (''), email = c(''))
+    for (folder in folders) {
+        file_list <- dir(path = folder)
+        for (f in file_list) {
+            #if (str_starts(email_file, "0001\\.ea7e79d")) {
+            path <- paste0(folder, .Platform$file.sep, f)
+            filtered <- ReadAndCleanEmail(path)
+            if (str_length(filtered) > 0) {
+                result <- result %>% add_row(email_src = path, cat = category, email = filtered)
+            }
+            #} #
+        }
+    }
+    return (result)
+}
+```
+
+
+```{r}
+easy_hams <- ReadEmails(easy_ham_folders, category = 'ham')
+#hard_hams <- ReadEmails(hard_ham_folders, category = 'ham')
+spams <- ReadEmails(spam_folders, category = 'spam')
+```
+
+```{r}
+sms <- bind_rows(spams, easy_hams)
+sms <- sms %>% transmute(category = cat, sms = email)
+```
+
+```{r}
+write.csv(sms, file = "jawaid.csv", quote = TRUE)
+```
+
