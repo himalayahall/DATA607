@@ -38,6 +38,19 @@ library(readtext)
 set.seed(1234)
 ```
 
+```{r}
+parallel::detectCores(logical = TRUE)
+```
+
+```{r unix-and-mac-onlu}
+library(doMC)
+registerDoMC(cores = 2)
+```
+
+```{r}
+
+```
+
 # Load data
 
 ```{r load-data}
@@ -127,10 +140,10 @@ sms_recipe <- recipe(cat ~ sms, data = sms_train) %>%
                 step_tokenfilter(sms, max_tokens = max_words, min_times = 10) %>%
                 step_tfidf(sms) %>%
                 step_downsample(cat, under_ratio = 2)
-sms_rec
+sms_recipe
 ```
 
-
+There are a number of models availan
 ```{r}
 library(discrim)
 model <- rand_forest() %>%
@@ -149,31 +162,102 @@ sms_wf
 
 
 ```{r}
-sms_folds <- vfold_cv(sms_train)
+sms_folds <- vfold_cv(sms_train, strata = cat)
 sms_folds
 ```
 
 
 ```{r}
-#sms_fit <- sms_wf %>%
-#        fit(data = sms_train)
+nb_rs <- fit_resamples(
+  sms_wf,
+  sms_folds,
+  metrics = metric_set(accuracy, roc_auc, precision, recall),
+  control = control_resamples(save_pred = TRUE)
+)
 ```
 
+
+```{r}
+nb_rs_metrics <- collect_metrics(nb_rs)
+nb_rs_predictions <- collect_predictions(nb_rs)
+
+nb_rs_metrics
+```
+
+
+```{r}
+nb_rs_predictions %>%
+  group_by(id) %>%
+  roc_curve(truth = cat, .pred_ham) %>%
+  autoplot() +
+  labs(
+    color = NULL,
+    title = "ROC curve for US Consumer Finance Complaints",
+    subtitle = "Each resample fold is shown in a different color"
+  )
+```
+
+```{r}
+conf_mat_resampled(nb_rs, tidy = FALSE) %>%
+  autoplot(type = "heatmap")
+```
+
+## Compare to Null model
+
+```{r}
+null_classification <- null_model() %>%
+  set_engine("parsnip") %>%
+  set_mode("classification")
+
+null_rs <- workflow() %>%
+  add_recipe(sms_recipe) %>%
+  add_model(null_classification) %>%
+  fit_resamples(
+    sms_folds, 
+    metrics = metric_set(accuracy, roc_auc, precision, recall),
+    control = control_resamples(save_pred = TRUE)
+  )
+```
+
+The null model has a high **accuracy** (same as proportion of the majority class) and a terrible **roc_auc**.
+
+```{r}
+null_rs %>%
+  collect_metrics()
+```
+
+As expected, the null model simply guesses the majority class *ham* on each prediction.
+
+```{r}
+conf_mat_resampled(null_rs, tidy = FALSE) %>%
+  autoplot(type = "heatmap")
+
+```
+
+## Fit one final time with all the data
 
 ```{r}
 final_fitted <- last_fit(sms_wf, sms_split)
 ```
 
+The final model looks quite good with a **roc_auc** of 0.981.
 
 ```{r}
-collect_predictions(final_fitted) %>%
+final_metrics <- collect_metrics(final_fitted)
+final_predictions <- collect_predictions(final_fitted)
+
+final_metrics
+```
+
+And the confusion matrix bears out that tghe model is performing well.
+```{r}
+final_predictions %>%
   conf_mat(truth = cat, estimate = .pred_class) %>%
   autoplot(type = "heatmap")
 ```
 
-
 ```{r}
-collect_predictions(final_fitted)  %>%
+final_predictions  %>%
   roc_curve(truth = cat, .pred_ham) %>%
   autoplot() +
   labs(
