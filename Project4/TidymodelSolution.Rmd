@@ -42,13 +42,11 @@ set.seed(1234)
 parallel::detectCores(logical = TRUE)
 ```
 
+On Unix and Mac we can leverage multiple cpu/core. Comment out on Windows.
+
 ```{r unix-and-mac-onlu}
 library(doMC)
 registerDoMC(cores = 2)
-```
-
-```{r}
-
 ```
 
 # Load data
@@ -61,7 +59,7 @@ df <- read.delim("SMSSpamCollection.txt",
 glimpse(df)
 ```
 
-We can expect the SMS data to be  unbalanced, i.e. number of spam observations is a minority class. Proportion of spam observations is 13.4%. 
+We expect the SMS data to be  unbalanced, i.e. number of spam observations is the minority class. This is validated by noting that proportion of spam observations is 13.4%. 
 
 ```{r}
 df %>% 
@@ -69,16 +67,17 @@ df %>%
   mutate(prop = n/sum(n))
 ```
 
+Make cat (category) a factor type and add a word count column, n_words.
 
 ```{r}
 df <- df %>%
-    mutate(target = ifelse(cat == "ham", 0, 1)) %>%
     mutate(cat = as.factor(cat)) %>%
     mutate(n_words = tokenizers::count_words(sms))
     
 glimpse(df)
 ```
 
+Look at the proportion. Notice that spam observations are in minority. This class imbalance will have an impact of how we build  ML models.
 
 ```{r}
 df %>% 
@@ -86,24 +85,19 @@ df %>%
   mutate(prop = n/sum(n))
 ```
 
+## Base model
 
-```{r}
-DT::datatable(df %>%
-              count(cat),
-                extensions = c('FixedColumns',"FixedHeader"),
-            options = list(scrollX = TRUE,
-                         paging=TRUE,
-                         fixedHeader=TRUE))
-```
-
-
-Verify train/test splits have the same proportion of ham/spam as original data set. As we see, the training and test splits have the same proportion as original.
+Split into train and test data sets.
 
 ```{r}
 sms_split <- initial_split(df, strata = cat)
 sms_train <- training(sms_split)
 sms_test <- testing(sms_split)
+```
 
+Verify train/test splits have the same proportions as original data set. As we see, the training and test splits have the same proportion as original.
+
+```{r}
 # training set proportions by category
 sms_train %>% 
   count(cat) %>% 
@@ -115,6 +109,7 @@ sms_test  %>%
   mutate(prop = n/sum(n))
 ```
 
+Let's take a look at the word count distribution. Most SMS observations are between 10-40 words.
 
 ```{r}
 sms_train %>%
@@ -125,25 +120,35 @@ sms_train %>%
        y = "Number of sms")
 ```
 
+Set threshhold for maximum unique words in data set.
 
 ```{r}
 max_words <- 10000
-max_length <- 60
 ```
 
+Set up recipe. We set it up to predict **cat** (outcome) from **sms** (predictor). The predictor is tokenized, stopwords are removed, and tokens are filtered. Tokens are encoded using **tf-idf**. Finally, data is downsampled such that the majority levels will have (at most) (approximately) twice as many rows than the minority level.
 
 ```{r}
 library(themis)
-sms_recipe <- recipe(cat ~ sms, data = sms_train) %>%
-                step_tokenize(sms, options = list(lowercase = TRUE, strip_punct = TRUE)) %>%
+sms_recipe <- recipe(
+                cat ~ sms, data = sms_train) %>%
+                step_tokenize(sms, 
+                              options = list(lowercase = TRUE, 
+                                             strip_punct = TRUE)) %>%
                 step_stopwords(sms) %>%
-                step_tokenfilter(sms, max_tokens = max_words, min_times = 10) %>%
+                step_tokenfilter(sms, 
+                                 max_tokens = max_words, 
+                                 min_times = 10
+                                )  %>%
                 step_tfidf(sms) %>%
-                step_downsample(cat, under_ratio = 2)
+                step_downsample(cat, 
+                                under_ratio = 2 
+                                )
 sms_recipe
 ```
 
-There are a number of models availan
+There are a number of models available. We will select **random forest**.
+
 ```{r}
 library(discrim)
 model <- rand_forest() %>%
@@ -152,6 +157,7 @@ model <- rand_forest() %>%
 model
 ```
 
+Create workflow with recipe and model.
 
 ```{r}
 sms_wf <- workflow() %>%
@@ -160,12 +166,14 @@ sms_wf <- workflow() %>%
 sms_wf
 ```
 
+We will use 10-fold cross validation to train and evaluate our model. Also make sure that the folds have the same strata as the original data set.
 
 ```{r}
 sms_folds <- vfold_cv(sms_train, strata = cat)
 sms_folds
 ```
 
+Train the model, record key metrics, save predictions.
 
 ```{r}
 nb_rs <- fit_resamples(
@@ -176,6 +184,7 @@ nb_rs <- fit_resamples(
 )
 ```
 
+Extract metrics and predictions.
 
 ```{r}
 nb_rs_metrics <- collect_metrics(nb_rs)
@@ -184,6 +193,7 @@ nb_rs_predictions <- collect_predictions(nb_rs)
 nb_rs_metrics
 ```
 
+Plot ROC curve for all folds.
 
 ```{r}
 nb_rs_predictions %>%
@@ -192,10 +202,12 @@ nb_rs_predictions %>%
   autoplot() +
   labs(
     color = NULL,
-    title = "ROC curve for US Consumer Finance Complaints",
+    title = "ROC curve for SMS (ham)",
     subtitle = "Each resample fold is shown in a different color"
   )
 ```
+
+Confusion matrix.
 
 ```{r}
 conf_mat_resampled(nb_rs, tidy = FALSE) %>%
@@ -234,13 +246,15 @@ conf_mat_resampled(null_rs, tidy = FALSE) %>%
 
 ```
 
-## Fit one final time with all the data
+## Final model
+
+Final fit (with all training data).
 
 ```{r}
 final_fitted <- last_fit(sms_wf, sms_split)
 ```
 
-The final model looks quite good with a **roc_auc** of 0.981.
+Extract predictions and metrics. Final model looks quite good with a **roc_auc** of 0.981.
 
 ```{r}
 final_metrics <- collect_metrics(final_fitted)
@@ -249,12 +263,15 @@ final_predictions <- collect_predictions(final_fitted)
 final_metrics
 ```
 
-And the confusion matrix bears out that tghe model is performing well.
+The confusion matrix confirms the model is performing well.
+
 ```{r}
 final_predictions %>%
   conf_mat(truth = cat, estimate = .pred_class) %>%
   autoplot(type = "heatmap")
 ```
+
+Plat final model's ROC curve.
 
 ```{r}
 final_predictions  %>%
@@ -262,8 +279,8 @@ final_predictions  %>%
   autoplot() +
   labs(
     color = NULL,
-    title = "ROC curve for classification of SMS messages into ham/spam",
-    subtitle = "With final tuned lasso regularized classifier on the test set"
+    title = "ROC curve for SMS (ham)",
+    subtitle = "With final random forest classifier on the training set"
   )
 ```
 
