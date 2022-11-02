@@ -1,0 +1,51 @@
+---
+title: "Recommender Systems"
+author: "Jawaid Hakim"
+date: "`r Sys.Date()`"
+output:
+  
+  pdf_document: 
+    toc: true
+    number_sections: true
+  html_document:
+    
+    toc: true
+    toc_float: true
+    number_sections: true
+boxlinks: true
+urlcolor: blue
+always_allow_html: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Task
+
+Your task is to analyze an existing recommender system that you find interesting.
+
+## Task 1
+
+> Perform a Scenario Design analysis as described below. Consider whether it makes sense for your selected recommender system to perform scenario design twice, once for the organization (e.g. Amazon.com) and once for the organization's customers.
+
+### Target Audience
+
+Pair programming is a software development practice in which developers pair up. In it's purest form it is an agile software development technique in which two programmers work together at one workstation. One, the driver, writes code while the other, the observer or navigator, reviews each line of code as it is typed in. The two programmers switch roles frequently. With remote teams becoming the norm, the *one workstation* requirement is virtual.  
+
+The theoretical benefits of pair programming, in a nutshell, are that it is supposed to produce better outcomes that either developer would on her own. Problems and defects are identified earlier and solutions are discussed and evaluated up-front. In practice, pair programming is not easy to practice. For instance, it is very difficult to pair up with geographically distributed team members.  
+
+Enter [Github Copilot](https://github.com/features/copilot). This offering is centered squarely on the development community. Think of it as your paired developer who is available whenever you need assistance and who is an expert in your favorite languages and all the languages that you don't know!
+
+### Key Goals
+
+Developers spend a considerable amount of their time writing boilerplate code. Although nowadays there are excellent libraries and frameworks that alleviate a lot of this grunge work but there is still a tremendous volume of boilerplate code being written. Bugs and defects are invariably introduced that consume mindshare and development cycles.  
+
+Copilot uses AI to suggest code and entire functions across a wide variety of languages. Trained on billions of lines of code (from Github of course) across a spectrum of languages, Copilot turns natural language prompts and cues into coding suggestions. It promises to reduce development cycles, improve software quality, and provide best practices training.
+
+Copilot integrates with IDEs and provides inp-line code suggestions. For example, when a python developer starts defining a function:
+
+
+
