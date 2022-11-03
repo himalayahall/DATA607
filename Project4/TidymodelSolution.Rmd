@@ -23,6 +23,10 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Introduction
+
+In this markdown we will use [tidymodels](https://www.tidymodels.org) to build ham/spam classifiers for SMS messages. The library provides a framework for modeling and machine learning using [tidyverse](https://www.tidyverse.org) principles. 
+
 # Load library
 
 ```{r load-libs}
@@ -31,20 +35,19 @@ library(tidymodels)
 library(parsnip)
 library(textrecipes)
 library(readtext)
-
 ```
 
 ```{r set-seed}
 set.seed(1234)
 ```
 
-```{r}
+```{r deletec-cpu-cores}
 parallel::detectCores(logical = TRUE)
 ```
 
 On Unix and Mac we can leverage multiple cpu/core. Comment out on Windows.
 
-```{r unix-and-mac-onlu}
+```{r unix-and-mac-only}
 library(doMC)
 registerDoMC(cores = 2)
 ```
@@ -69,7 +72,7 @@ df %>%
 
 Make cat (category) a factor type and add a word count column, n_words.
 
-```{r}
+```{r factorize-cat}
 df <- df %>%
     mutate(cat = as.factor(cat)) %>%
     mutate(n_words = tokenizers::count_words(sms))
@@ -89,7 +92,7 @@ df %>%
 
 Split into train and test data sets.
 
-```{r}
+```{r create-data-splits}
 sms_split <- initial_split(df, strata = cat)
 sms_train <- training(sms_split)
 sms_test <- testing(sms_split)
@@ -120,15 +123,15 @@ sms_train %>%
        y = "Number of sms")
 ```
 
-Set threshhold for maximum unique words in data set.
+Set threshold for maximum unique words in data set.
 
 ```{r}
 max_words <- 10000
 ```
 
-Set up recipe. We set it up to predict **cat** (outcome) from **sms** (predictor). The predictor is tokenized, stopwords are removed, and tokens are filtered. Tokens are encoded using **tf-idf**. Finally, data is downsampled such that the majority levels will have (at most) (approximately) twice as many rows than the minority level.
+Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **cat** (outcome) from **sms** (predictor). The predictor is tokenized, stop words are removed, and tokens are filtered (max number of tokens retained and min times a token must appear to be considered at all). Tokens are encoded using **tf-idf**. Finally, data is down-sampled such that the majority class level will have (at most) twice as many rows as the minority level.
 
-```{r}
+```{r create-model-recipe}
 library(themis)
 sms_recipe <- recipe(
                 cat ~ sms, data = sms_train) %>%
@@ -147,7 +150,17 @@ sms_recipe <- recipe(
 sms_recipe
 ```
 
-There are a number of models available. We will select **random forest**.
+There is a wide palette of models The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to plug-and-play with models. Below are 2 models, **mlp** (multi-layer perceptron, a single layer neural network) and **random forest**.
+
+```{r}
+# model <-
+#   mlp(hidden_units = 256, dropout = 0.1, epochs = 50) %>%
+#   set_mode("classification") %>%
+#   # Also set engine-specific `verbose` argument to prevent logging the results:
+#   set_engine("keras", verbose = 1)
+```
+
+Use random forest model.
 
 ```{r}
 library(discrim)
@@ -157,7 +170,7 @@ model <- rand_forest() %>%
 model
 ```
 
-Create workflow with recipe and model.
+Create [workflow](https://workflows.tidymodels.org) using above recipe and model.
 
 ```{r}
 sms_wf <- workflow() %>%
@@ -283,5 +296,4 @@ final_predictions  %>%
     subtitle = "With final random forest classifier on the training set"
   )
 ```
-
 
