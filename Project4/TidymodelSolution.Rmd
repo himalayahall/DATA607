@@ -57,13 +57,13 @@ registerDoMC(cores = 2)
 We have two data sets are available for building classifiers. One is a collection of SMS messages, the other is a (much larger) collection of emails. SMS messages are shorter and less noisy. Email messages are longer and contain significant noise (Html tags, email headers, etc.).
 
 ```{r load-data}
-# df <- read.delim("SMSSpamCollection.txt",
-#                   sep = '\t',
-#                   col.names = c('cat', 'text'),
-#                   quote = "")
-# num_epochs = 50
-df <- read.csv("./EMAILSpamCollection.csv")
-#num_epochs = 20
+df <- read.delim("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project4/SMSSpamCollection.txt",
+                  sep = '\t',
+                  col.names = c('cat', 'text'),
+                  quote = "")
+
+# Email data  is too big to load from [Github](https://github.com/himalayahall/DATA607/blob/main/Project4/EMAILSpamCollection.csv). Download into current 
+# df <- read.csv("./EMAILSpamCollection.csv")
 
 df <- df %>% filter(cat != "") %>% filter(text != "")
 glimpse(df)
@@ -78,7 +78,7 @@ props <- df %>%
 props
 ```
 
-Mutate cat (category) into a factor and add word count column.
+Mutate category into a factor and add word count column.
 
 ```{r factorize-cat}
 df <- df %>%
@@ -96,7 +96,7 @@ df %>%
   mutate(prop = n/sum(n))
 ```
 
-Let's look at the word distribution.
+Take look at the distribution of number of words per observation.
 
 ```{r}
 summary(df$n_words)
@@ -216,6 +216,8 @@ model <- rand_forest() %>%
 # model
 
 # Multi-layer perceptron, a single layer neural network.
+# num_epochs = 50 # for SMS data set
+# num_epochs = 50 # for Email data set
 # model <- mlp(hidden_units = 128, dropout = 0.1, epochs = num_epochs) %>%
 #   set_mode("classification") %>%
 #   # Also set engine-specific `verbose` argument to prevent logging the results:
