@@ -28,9 +28,17 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidytext)
 library(textdata)
+
+library(syuzhet)     # sentiment lexicon
+library(hcandersenr) # Stories (English) of Hans Christian Andersen
 ```
 
-# Introduction
+# Task
+
+> You're then asked to extend the code in two ways:
+>
+> 1.  Work with a different corpus of your choosing, and
+> 2.  Incorporate at least one additional sentiment lexicon (possibly from another R package that you've found through research)
 
 Select fairy tales written by Hans Christian Andersen, available in the [hcandersenr] (<https://CRAN.R-project.org/package=hcandersenr>) package.
 
@@ -39,11 +47,6 @@ Notice, there are no chapters in these short stories. Furthermore, since the sto
 Use [Syuzhet](https://cran.r-project.org/web/packages/syuzhet/vignettes/syuzhet-vignette.html) sentiment lexicon.
 
 Code used in this Rmd is influenced by [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book **Text Mining with R by Juilia Silge and David Robinson**.
-
-```{r}
-library(syuzhet)     # sentiment lexicon
-library(hcandersenr) # Stories (English) of Hans Christian Andersen
-```
 
 ## Tidy data
 
@@ -74,7 +77,7 @@ the_fir_tree
 
 Whereas in novels of Jane Austen we considered sentence spans of length 80, in these short stories we can expect the sentiment to fluctuate within a shorter span. Here we will use a span of 15 sentences for grouping sentiment.
 
-Create sentiment scores using AFINN, NRC, and bing lexicons.  
+Create sentiment scores using AFINN, NRC, and bing lexicons.
 
 ```{r}
 sent_span <- 15 # compute sentiment for 15-sentence spans
@@ -179,4 +182,3 @@ tidy_books %>%
   count(word) %>%
   with(wordcloud(word, n, max.words = 100, scale = c(2.5, 0.25)))
 ```
-

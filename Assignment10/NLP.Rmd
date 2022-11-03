@@ -21,7 +21,9 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Introduction
+# Task
+
+>In this assignment, you should start by getting the primary example code from chapter 2 working in an R Markdown document.  You should provide a citation to this base code.  
 
 In the first part of this assignment, I recreate the code from [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book **Text Mining with R by Juilia Silge and David Robinson**.
 
