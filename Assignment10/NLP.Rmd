@@ -21,6 +21,10 @@ editor_options:
   chunk_output_type: console
 ---
 
+# Introduction
+
+In the first part of this assignment, I recreate the code from [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book **Text Mining with R by Juilia Silge and David Robinson**.
+
 # Load libraries
 
 ```{r setup, include=TRUE, warning=FALSE}
@@ -28,10 +32,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidytext)
 library(textdata)
 ```
-
-# Citation
-
-Code used in this Rmd has been sourced from the [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book Text Mining with R by Juilia Silge and David Robinson.
 
 ```{r}
 lexicons <- c('bing', 'afinn', 'loughran', 'nrc')

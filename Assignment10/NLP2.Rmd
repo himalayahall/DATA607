@@ -34,9 +34,11 @@ library(textdata)
 
 Select fairy tales written by Hans Christian Andersen, available in the [hcandersenr] (<https://CRAN.R-project.org/package=hcandersenr>) package.
 
-Notice, there are no chapters in these short stories. Furthermore, number (span) of sentences used for sentiment trend analysis will be shorter than span for novels.
+Notice, there are no chapters in these short stories. Furthermore, since the stores are relatively short, number (span) of sentences used for sentiment trend analysis will be shorter as well.
 
 Use [Syuzhet](https://cran.r-project.org/web/packages/syuzhet/vignettes/syuzhet-vignette.html) sentiment lexicon.
+
+Code used in this Rmd is influenced by [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book **Text Mining with R by Juilia Silge and David Robinson**.
 
 ```{r}
 library(syuzhet)     # sentiment lexicon
@@ -45,7 +47,7 @@ library(hcandersenr) # Stories (English) of Hans Christian Andersen
 
 ## Tidy data
 
-Read all stories of Hans Christian Andersen into data frame with 'tidy' principles - one word per row. Add line and chapter numbers to each row.
+Read all stories of Hans Christian Andersen into data frame using 'tidy' principles - one word per row. Add line and chapter number to each row.
 
 ```{r}
 tidy_books <- hcandersen_en %>%
@@ -61,7 +63,7 @@ tidy_books <- hcandersen_en %>%
 glimpse(tidy_books)
 ```
 
-Select 'The fir tree' story.
+Select 'The fir tree'.
 
 ```{r}
 the_fir_tree <- tidy_books %>% 
@@ -70,17 +72,17 @@ the_fir_tree <- tidy_books %>%
 the_fir_tree
 ```
 
-Whereas in novels of Jane Austen we considered sentence spans of length 80, in these short stories we can expect the sentiment to fluctuate within a shorter senetence span. Here we will use a span of 15 sentences for grouping sentiment.
+Whereas in novels of Jane Austen we considered sentence spans of length 80, in these short stories we can expect the sentiment to fluctuate within a shorter span. Here we will use a span of 15 sentences for grouping sentiment.
 
 Create sentiment scores using AFINN, NRC, and bing lexicons.  
 
 ```{r}
-sent_run_length <- 15
+sent_span <- 15 # compute sentiment for 15-sentence spans
 
 afinn <- the_fir_tree %>% 
   inner_join(get_sentiments("afinn"), 
              by = "word") %>% 
-  group_by(index = linenumber %/% sent_run_length) %>% 
+  group_by(index = linenumber %/% sent_span) %>% 
   summarise(sentiment = sum(value)) %>% 
   mutate(method = "AFINN")
 
@@ -167,7 +169,7 @@ ggplot(hca_sentiment, aes(index, sentiment, fill = book)) +
   facet_wrap(~book, ncol = 1, scales = "free_x")
 ```
 
-Create a worlcloud of top 100 works (minus stopwords) from all stories of Hans Christian Andersen.
+Create a wordcloud of top 100 works (minus stopwords) from all stories of Hans Christian Andersen.
 
 ```{r}
 library(wordcloud)
@@ -178,5 +180,3 @@ tidy_books %>%
   with(wordcloud(word, n, max.words = 100, scale = c(2.5, 0.25)))
 ```
 
-# Citations
-Code used in this Rmd has been sourced from the [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book Text Mining with R by Juilia Silge and David Robinson.
