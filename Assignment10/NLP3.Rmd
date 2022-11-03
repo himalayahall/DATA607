@@ -28,29 +28,24 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidytext)
 library(textdata)
+```
 
+# Introduction
+
+Select fairy tales written by Hans Christian Andersen, available in the [hcandersenr] (<https://CRAN.R-project.org/package=hcandersenr>) package.
+
+Notice, there are no chapters in these short stories. Furthermore, number (span) of sentences used for sentiment trend analysis will be shorter than span for novels.
+
+Use [Syuzhet](https://cran.r-project.org/web/packages/syuzhet/vignettes/syuzhet-vignette.html) sentiment lexicon.
+
+```{r}
 library(syuzhet)     # sentiment lexicon
 library(hcandersenr) # Stories (English) of Hans Christian Andersen
 ```
 
-# Task
-
-> You're then asked to extend the code in two ways:
->
-> 1.  Work with a different corpus of your choosing, and
-> 2.  Incorporate at least one additional sentiment lexicon (possibly from another R package that you've found through research)
-
-Select fairy tales written by Hans Christian Andersen, available in the [hcandersenr] (<https://CRAN.R-project.org/package=hcandersenr>) package.
-
-Notice, there are no chapters in these short stories. Furthermore, since the stores are relatively short, number (span) of sentences used for sentiment trend analysis will be shorter as well.
-
-Use [Syuzhet](https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6) sentiment lexicon.
-
-Code used in this Rmd is influenced by [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book **Text Mining with R by Juilia Silge and David Robinson**.
-
 ## Tidy data
 
-Read all stories of Hans Christian Andersen into data frame using 'tidy' principles - one word per row. Add line and chapter number to each row.
+Read all stories of Hans Christian Andersen into data frame with 'tidy' principles - one word per row. Add line and chapter numbers to each row.
 
 ```{r}
 tidy_books <- hcandersen_en %>%
@@ -66,7 +61,7 @@ tidy_books <- hcandersen_en %>%
 glimpse(tidy_books)
 ```
 
-Select 'The fir tree'.
+Select 'The fir tree' story.
 
 ```{r}
 the_fir_tree <- tidy_books %>% 
@@ -75,17 +70,17 @@ the_fir_tree <- tidy_books %>%
 the_fir_tree
 ```
 
-Whereas in novels of Jane Austen we considered sentence spans of length 80, in these short stories we can expect the sentiment to fluctuate within a shorter span. Here we will use a span of 15 sentences for grouping sentiment.
+Whereas in novels of Jane Austen we considered sentence spans of length 80, in these short stories we can expect the sentiment to fluctuate within a shorter senetence span. Here we will use a span of 15 sentences for grouping sentiment.
 
-Create sentiment scores using AFINN, NRC, and bing lexicons.
+Create sentiment scores using AFINN, NRC, and bing lexicons.  
 
 ```{r}
-sent_span <- 10 # compute sentiment for 15-sentence spans
+sent_run_length <- 15
 
 afinn <- the_fir_tree %>% 
   inner_join(get_sentiments("afinn"), 
              by = "word") %>% 
-  group_by(index = linenumber %/% sent_span) %>% 
+  group_by(index = linenumber %/% sent_run_length) %>% 
   summarise(sentiment = sum(value)) %>% 
   mutate(method = "AFINN")
 
@@ -102,7 +97,7 @@ bing_and_nrc <- bind_rows(
                ) %>%
     mutate(method = "NRC")) %>%
   count(method, 
-        index = linenumber %/% sent_span, sentiment) %>%
+        index = linenumber %/% sent_run_length, sentiment) %>%
   pivot_wider(names_from = sentiment,
               values_from = n,
               values_fill = 0) %>% 
@@ -116,16 +111,14 @@ Add sentiment score using the Syuzhet sentiment lexicon.
 syuzhet <- the_fir_tree %>% 
   inner_join(syuzhet::get_sentiment_dictionary(), 
              by="word") %>% 
-  group_by(index = linenumber %/% sent_span) %>% 
+  group_by(index = linenumber %/% sent_run_length) %>% 
   summarise(sentiment = sum(value)) %>% 
   mutate(method = "SYUZHET")
 
 glimpse(syuzhet)
 ```
 
-Plot sentiment analysis for The fir tree. Both AFINN and Syuzhet measure sentiment with a numeric score. AFINN assigns scores between [-2, 2], Syuzhet also assigns numeric negative/positive scores but I was not able to find the range (if any).  
-
-All 4 sentiment lexicons show similar dips and peaks in sentiment at about the same places in the novel. I would say that Syuzhet is cl;osest aligned with Bing, with AFINN a close second.
+Plot sentiment analysis for The fir tree.
 
 ```{r}
 bind_rows(afinn, 
@@ -141,10 +134,10 @@ There are 156 books in this collection. Too many to plot together!
 NROW(unique(hcandersen_en$book))
 ```
 
-Let's select books at random for sentiment analysis using the Syuzhet sentiment lexicon.
+Let's select 5 books at random for sentiment analysis using Syuzhet sentiment lexicon.
 
 ```{r}
-books <- c('The old church bell', 'The windmill', 'Moving day', 'The comet', 'The great sea serpent', 'The fir tree')
+books <- c('Aunty', 'The windmill', 'Moving day', 'Two brothers', 'The fir tree')
 
 tidy_books_5 <- hcandersen_en %>%
   filter(book %in% books) %>%
@@ -161,12 +154,12 @@ hca_sentiment <- tidy_books_5 %>%
   inner_join(syuzhet::get_sentiment_dictionary()) %>% 
   mutate(sentiment = value) %>%
   select(-value) %>%
-  count(book, index = linenumber %/% 8, sentiment) #%>%
+  count(book, index = linenumber %/% sent_run_length, sentiment) #%>%
   #pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) 
 
 ```
 
-Plot sentiment across all selected stories. There is a up-and-down pattern to sentiment, and positive endings.
+Plot.
 
 ```{r}
 ggplot(hca_sentiment, aes(index, sentiment, fill = book)) +
@@ -174,7 +167,7 @@ ggplot(hca_sentiment, aes(index, sentiment, fill = book)) +
   facet_wrap(~book, ncol = 1, scales = "free_x")
 ```
 
-Create a wordcloud of top 100 works (minus stopwords) from all stories of Hans Christian Andersen.
+Create a worlcloud of top 100 works (minus stopwords) from all stories of Hans Christian Andersen.
 
 ```{r}
 library(wordcloud)
@@ -185,18 +178,5 @@ tidy_books %>%
   with(wordcloud(word, n, max.words = 100, scale = c(2.5, 0.25)))
 ```
 
-Let's draw positive/negative work cloud using the Syzuhet sentiment lexicon. We do this by mutating sentiment below 0.0 to negative, otherwise positive.
-
-```{r}
-library(reshape2)
-
-tidy_books %>%
-  inner_join(syuzhet::get_sentiment_dictionary(), by = "word") %>%
-  mutate(sentiment = ifelse(value >= 0.0, 'positive', 'negative')) %>%
-  select(-value) %>%
-  count(word, sentiment, sort = TRUE) %>%
-  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
-  comparison.cloud(colors = c("gray20", "gray80"), scale = c(3, .5),
-                   max.words = 100)
-```
-
+# Citations
+Code used in this Rmd has been sourced from the [Chapter 2](https://www.tidytextmining.com/sentiment.html) of the book Text Mining with R by Juilia Silge and David Robinson.
