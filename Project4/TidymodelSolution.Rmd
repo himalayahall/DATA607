@@ -1,16 +1,16 @@
 ---
-title: "Project 4"
+title: "Project 4 - text classification"
 author: "Jawaid Hakim"
 date: "`r Sys.Date()`"
 output:
   
-  pdf_document: 
-    toc: true
-    number_sections: true
   html_document:
     
     toc: true
     toc_float: true
+    number_sections: true
+  pdf_document: 
+    toc: true
     number_sections: true
 boxlinks: true
 urlcolor: blue
@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-In this markdown we will use [tidymodels](https://www.tidymodels.org) to build ham/spam classifiers for SMS messages. The library provides a framework for modeling and machine learning using [tidyverse](https://www.tidyverse.org) principles. 
+In this markdown we will use [tidymodels](https://www.tidymodels.org) to build ham/spam classifiers for SMS/Email messages. The library provides a framework for modeling and machine learning using [tidyverse](https://www.tidyverse.org) principles.
 
 # Load library
 
@@ -54,20 +54,25 @@ registerDoMC(cores = 2)
 
 # Load data
 
+There are 2 data sets we can use for modeling. One is a collection of SMS messages, the other is a (much larger) collection of emails. SMS messages are shorter and less noisy. Email messages are longer and contain significant noise (Html tags, email headers, etc.).
+
 ```{r load-data}
-df <- read.delim("SMSSpamCollection.txt", 
-                  sep = '\t', 
-                  col.names = c('cat', 'sms'), 
-                  quote = "")
+# df <- read.delim("SMSSpamCollection.txt", 
+#                   sep = '\t', 
+#                   col.names = c('cat', 'text'), 
+#                   quote = "")
+df <- read.csv("./EMAILSpamCollection.csv")
+df <- df %>% filter(cat != "")
 glimpse(df)
 ```
 
-We expect the SMS data to be  unbalanced, i.e. number of spam observations is the minority class. This is validated by noting that proportion of spam observations is 13.4%. 
+We expect the data to be unbalanced, i.e. number of spam observations is a minority class.
 
-```{r}
-df %>% 
+```{r props}
+props <- df %>% 
   count(cat) %>% 
   mutate(prop = n/sum(n))
+props
 ```
 
 Make cat (category) a factor type and add a word count column, n_words.
@@ -75,12 +80,12 @@ Make cat (category) a factor type and add a word count column, n_words.
 ```{r factorize-cat}
 df <- df %>%
     mutate(cat = as.factor(cat)) %>%
-    mutate(n_words = tokenizers::count_words(sms))
+    mutate(n_words = tokenizers::count_words(text))
     
 glimpse(df)
 ```
 
-Look at the proportion. Notice that spam observations are in minority. This class imbalance will have an impact of how we build  ML models.
+Look at the proportion. Notice that spam observations are in minority. This class imbalance will have an impact of how we build ML models.
 
 ```{r}
 df %>% 
@@ -93,34 +98,34 @@ df %>%
 Split into train and test data sets.
 
 ```{r create-data-splits}
-sms_split <- initial_split(df, strata = cat)
-sms_train <- training(sms_split)
-sms_test <- testing(sms_split)
+data_split <- initial_split(df, strata = cat)
+data_train <- training(data_split)
+data_test <- testing(data_split)
 ```
 
 Verify train/test splits have the same proportions as original data set. As we see, the training and test splits have the same proportion as original.
 
 ```{r}
 # training set proportions by category
-sms_train %>% 
+data_train %>% 
   count(cat) %>% 
   mutate(prop = n/sum(n))
 
 # test set proportions by category
-sms_test  %>% 
+data_test  %>% 
   count(cat) %>% 
   mutate(prop = n/sum(n))
 ```
 
-Let's take a look at the word count distribution. Most SMS observations are between 10-40 words.
+Let's take a look at the word count distribution. Most observations conmtain between 10-40 words.
 
 ```{r}
-sms_train %>%
-  mutate(n_words = tokenizers::count_words(sms)) %>%
+data_train %>%
+  mutate(n_words = tokenizers::count_words(text)) %>%
   ggplot(aes(n_words)) +
   geom_bar() +
-  labs(x = "Number of words per sms",
-       y = "Number of sms")
+  labs(x = "Number of words per observation",
+       y = "Number of observations")
 ```
 
 Set threshold for maximum unique words in data set.
@@ -129,32 +134,32 @@ Set threshold for maximum unique words in data set.
 max_words <- 10000
 ```
 
-Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **cat** (outcome) from **sms** (predictor). The predictor is tokenized, stop words are removed, and tokens are filtered (max number of tokens retained and min times a token must appear to be considered at all). Tokens are encoded using **tf-idf**. Finally, data is down-sampled such that the majority class level will have (at most) twice as many rows as the minority level.
+Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **cat** (outcome) from **text** (predictor). The predictor is tokenized, stop words are removed, and tokens are filtered (max number of tokens retained and min times a token must appear to be considered at all). Tokens are encoded using **tf-idf**. Finally, data is down-sampled such that the majority class level will have (at most) twice as many rows as the minority level.
 
 ```{r create-model-recipe}
 library(themis)
-sms_recipe <- recipe(
-                cat ~ sms, data = sms_train) %>%
-                step_tokenize(sms, 
+data_recipe <- recipe(
+                cat ~ text, data = data_train) %>%
+                step_tokenize(text, 
                               options = list(lowercase = TRUE, 
                                              strip_punct = TRUE)) %>%
-                step_stopwords(sms) %>%
-                step_tokenfilter(sms, 
+                step_stopwords(text) %>%
+                step_tokenfilter(text, 
                                  max_tokens = max_words, 
                                  min_times = 10
                                 )  %>%
-                step_tfidf(sms) %>%
+                step_tfidf(text) %>%
                 step_downsample(cat, 
                                 under_ratio = 2 
                                 )
-sms_recipe
+data_recipe
 ```
 
 There is a wide palette of models The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to plug-and-play with models. Below are 2 models, **mlp** (multi-layer perceptron, a single layer neural network) and **random forest**.
 
 ```{r}
 # model <-
-#   mlp(hidden_units = 256, dropout = 0.1, epochs = 50) %>%
+#   mlp(hidden_units = 256, dropout = 0.1, epochs = 20) %>%
 #   set_mode("classification") %>%
 #   # Also set engine-specific `verbose` argument to prevent logging the results:
 #   set_engine("keras", verbose = 1)
@@ -173,25 +178,25 @@ model
 Create [workflow](https://workflows.tidymodels.org) using above recipe and model.
 
 ```{r}
-sms_wf <- workflow() %>%
-            add_recipe(sms_recipe) %>%
+data_wf <- workflow() %>%
+            add_recipe(data_recipe) %>%
             add_model(model)
-sms_wf
+data_wf
 ```
 
 We will use 10-fold cross validation to train and evaluate our model. Also make sure that the folds have the same strata as the original data set.
 
 ```{r}
-sms_folds <- vfold_cv(sms_train, strata = cat)
-sms_folds
+data_folds <- vfold_cv(data_train, strata = cat)
+data_folds
 ```
 
 Train the model, record key metrics, save predictions.
 
 ```{r}
 nb_rs <- fit_resamples(
-  sms_wf,
-  sms_folds,
+  data_wf,
+  data_folds,
   metrics = metric_set(accuracy, roc_auc, precision, recall),
   control = control_resamples(save_pred = TRUE)
 )
@@ -215,7 +220,7 @@ nb_rs_predictions %>%
   autoplot() +
   labs(
     color = NULL,
-    title = "ROC curve for SMS (ham)",
+    title = "ROC curve for observations (ham)",
     subtitle = "Each resample fold is shown in a different color"
   )
 ```
@@ -235,10 +240,10 @@ null_classification <- null_model() %>%
   set_mode("classification")
 
 null_rs <- workflow() %>%
-  add_recipe(sms_recipe) %>%
+  add_recipe(data_recipe) %>%
   add_model(null_classification) %>%
   fit_resamples(
-    sms_folds, 
+    data_folds, 
     metrics = metric_set(accuracy, roc_auc, precision, recall),
     control = control_resamples(save_pred = TRUE)
   )
@@ -264,7 +269,7 @@ conf_mat_resampled(null_rs, tidy = FALSE) %>%
 Final fit (with all training data).
 
 ```{r}
-final_fitted <- last_fit(sms_wf, sms_split)
+final_fitted <- last_fit(data_wf, data_split)
 ```
 
 Extract predictions and metrics. Final model looks quite good with a **roc_auc** of 0.981.
@@ -292,8 +297,7 @@ final_predictions  %>%
   autoplot() +
   labs(
     color = NULL,
-    title = "ROC curve for SMS (ham)",
+    title = "ROC curve for observations (ham)",
     subtitle = "With final random forest classifier on the training set"
   )
 ```
-
