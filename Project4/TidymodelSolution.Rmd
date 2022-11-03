@@ -63,7 +63,7 @@ We have two data sets are available for building classifiers. One is a collectio
 #                   quote = "")
 # num_epochs = 50
 df <- read.csv("./EMAILSpamCollection.csv")
-num_epochs = 20
+#num_epochs = 20
 
 df <- df %>% filter(cat != "") %>% filter(text != "")
 glimpse(df)
@@ -78,7 +78,7 @@ props <- df %>%
 props
 ```
 
-Mutate cat (category) into a factor and add a word count column, n_words.
+Mutate cat (category) into a factor and add word count column.
 
 ```{r factorize-cat}
 df <- df %>%
@@ -132,7 +132,7 @@ Set threshold for maximum unique words in data set.
 max_words <- 10000
 ```
 
-Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **cat** (outcome) from **text** (predictor). The predictor is tokenized, stop words are removed, and tokens are filtered (max number of tokens retained and min times a token must appear in corpus in order to be considered). Tokens are encoded using **tf-idf**. Finally, data is down-sampled such that the majority class level will have (at most) twice as many rows as the minority level.
+Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **cat** (outcome) from **text** (predictor). The predictor is tokenized, stop words are removed, tokens are stemmed, and tokens are filtered (max number of tokens retained and min times a token must appear in corpus in order to be considered). Tokens are encoded using **tf-idf**. Finally, data is down-sampled such that the majority class level will have (at most) twice as many rows as the minority level. Token transformations are done via [textrecipes] (https://www.rdocumentation.org/packages/textrecipes/versions/1.0.10)
 
 ```{r create-model-recipe}
 library(themis)
@@ -142,6 +142,7 @@ data_recipe <- recipe(
                               options = list(lowercase = TRUE, 
                                              strip_punct = TRUE)) %>%
                 step_stopwords(text) %>%
+                step_stem(text) %>%
                 step_tokenfilter(text, 
                                  min_times = .01* NROW(data_train), # must be in 1% corpus
                                  max_tokens = max_words
@@ -153,27 +154,77 @@ data_recipe <- recipe(
 data_recipe
 ```
 
-There is a wide palette of models The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to plug-and-play with models. Below are 2 models, **mlp** (multi-layer perceptron, a single layer neural network) and **random forest**.
+## Null model
+
+Before building classification models it's important to look at the null model. For binary classification the null model always predicts the majority class. The **accuracy** of the null model will equal the proportion of the majority class. For example, if there are 90% hams (not spam) observations in the data set then accuracy of the null model will also be 90%.  
 
 ```{r}
-model <-
-  mlp(hidden_units = 128, dropout = 0.1, epochs = num_epochs) %>%
+prep(data_recipe, verbose = TRUE)
+null_classification <- null_model() %>%
+  set_engine("parsnip") %>%
+  set_mode("classification")
+
+null_rs <- workflow() %>%
+  add_recipe(data_recipe) %>%
+  add_model(null_classification) %>%
+  fit_resamples(
+    data_folds, 
+    metrics = metric_set(accuracy, roc_auc, precision, recall),
+    control = control_resamples(save_pred = TRUE)
+  )
+```
+
+The null model high **accuracy** (same as proportion of the majority class) and a terrible [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic). It has a high [specificity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity) and an abysimal [sensitivity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity).
+
+```{r}
+null_rs %>%
+  collect_metrics()
+```
+
+As expected, the null model simply guesses the majority class *ham* on each prediction.
+
+```{r}
+conf_mat_resampled(null_rs, tidy = FALSE) %>%
+  autoplot(type = "heatmap")
+
+```
+
+The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to plug-and-play with models. Below are some models that we can use - un-comment to select.
+
+Random forest.
+
+```{r models}
+model <- rand_forest() %>%
   set_mode("classification") %>%
-  # Also set engine-specific `verbose` argument to prevent logging the results:
-  set_engine("keras", verbose = 1)
-```
+  set_engine(engine = "ranger", importance = "impurity")
 
-Use random forest model.
-
-```{r}
-# library(discrim)
-# model <- rand_forest() %>%
+# Linear support vector machine.
+# model <- svm_linear() %>%
 #   set_mode("classification") %>%
-#   set_engine(engine = "ranger", importance = "impurity")
+#   set_engine(engine = "kernlab")
+
+# Boosted trees.
+# model <- boost_tree() %>%
+#   set_mode("classification") %>%
+#   set_engine(engine = "xgboost", trees = 20)
 # model
+
+# Linear support vector machine.
+# model <- svm_linear() %>%
+#   set_mode("classification") %>%
+#   set_engine(engine = "kernlab")
+# model
+
+# Multi-layer perceptron, a single layer neural network.
+# model <- mlp(hidden_units = 128, dropout = 0.1, epochs = num_epochs) %>%
+#   set_mode("classification") %>%
+#   # Also set engine-specific `verbose` argument to prevent logging the results:
+#   set_engine("keras", verbose = 1)
+
+model
 ```
 
-Create [workflow](https://workflows.tidymodels.org) using above recipe and model.
+Create [workflow](https://workflows.tidymodels.org) using above recipe and model. A workflow wraps the data recipe and model.
 
 ```{r}
 data_wf <- workflow() %>%
@@ -182,20 +233,27 @@ data_wf <- workflow() %>%
 data_wf
 ```
 
-We will use 10-fold cross validation to train and evaluate our model. Also make sure that the folds have the same strata as the original data set.
+To evaluate the model we will use 10-fold cross-validation. Make sure the folds have the same strata as the original data set.
 
 ```{r}
 data_folds <- vfold_cv(data_train, strata = cat)
 data_folds
 ```
 
-Train the model, record key metrics, save predictions.
+Define metrics of interest.
+
+```{r}
+metrics = metric_set(accuracy, roc_auc, pr_auc, precision, recall)
+metrics
+```
+
+Train the model on folds, record desired metrics, save predictions.
 
 ```{r}
 nb_rs <- fit_resamples(
   data_wf,
   data_folds,
-  metrics = metric_set(accuracy, roc_auc, precision, recall),
+  metrics = metrics,
   control = control_resamples(save_pred = TRUE)
 )
 ```
@@ -230,44 +288,12 @@ conf_mat_resampled(nb_rs, tidy = FALSE) %>%
   autoplot(type = "heatmap")
 ```
 
-## Compare to Null model
-
-```{r}
-null_classification <- null_model() %>%
-  set_engine("parsnip") %>%
-  set_mode("classification")
-
-null_rs <- workflow() %>%
-  add_recipe(data_recipe) %>%
-  add_model(null_classification) %>%
-  fit_resamples(
-    data_folds, 
-    metrics = metric_set(accuracy, roc_auc, precision, recall),
-    control = control_resamples(save_pred = TRUE)
-  )
-```
-
-The null model has a high **accuracy** (same as proportion of the majority class) and a terrible **roc_auc**.
-
-```{r}
-null_rs %>%
-  collect_metrics()
-```
-
-As expected, the null model simply guesses the majority class *ham* on each prediction.
-
-```{r}
-conf_mat_resampled(null_rs, tidy = FALSE) %>%
-  autoplot(type = "heatmap")
-
-```
-
 ## Final model
 
 Final fit (with all training data).
 
 ```{r}
-final_fitted <- last_fit(data_wf, data_split)
+final_fitted <- last_fit(data_wf, data_split, metrics = metrics)
 ```
 
 Extract predictions and metrics. The ROC is above 95% which is indicative of a good model.
