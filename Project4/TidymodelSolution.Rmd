@@ -54,19 +54,22 @@ registerDoMC(cores = 2)
 
 # Load data
 
-There are 2 data sets we can use for modeling. One is a collection of SMS messages, the other is a (much larger) collection of emails. SMS messages are shorter and less noisy. Email messages are longer and contain significant noise (Html tags, email headers, etc.).
+We have two data sets are available for building classifiers. One is a collection of SMS messages, the other is a (much larger) collection of emails. SMS messages are shorter and less noisy. Email messages are longer and contain significant noise (Html tags, email headers, etc.).
 
 ```{r load-data}
-# df <- read.delim("SMSSpamCollection.txt", 
-#                   sep = '\t', 
-#                   col.names = c('cat', 'text'), 
+# df <- read.delim("SMSSpamCollection.txt",
+#                   sep = '\t',
+#                   col.names = c('cat', 'text'),
 #                   quote = "")
+# num_epochs = 50
 df <- read.csv("./EMAILSpamCollection.csv")
-df <- df %>% filter(cat != "")
+num_epochs = 20
+
+df <- df %>% filter(cat != "") %>% filter(text != "")
 glimpse(df)
 ```
 
-We expect the data to be unbalanced, i.e. number of spam observations is a minority class.
+We expect both data sets to be unbalanced, i.e. number of spam observations is a minority class.
 
 ```{r props}
 props <- df %>% 
@@ -75,7 +78,7 @@ props <- df %>%
 props
 ```
 
-Make cat (category) a factor type and add a word count column, n_words.
+Mutate cat (category) into a factor and add a word count column, n_words.
 
 ```{r factorize-cat}
 df <- df %>%
@@ -91,6 +94,12 @@ Look at the proportion. Notice that spam observations are in minority. This clas
 df %>% 
   count(cat) %>% 
   mutate(prop = n/sum(n))
+```
+
+Let's look at the word distribution.
+
+```{r}
+summary(df$n_words)
 ```
 
 ## Base model
@@ -117,24 +126,13 @@ data_test  %>%
   mutate(prop = n/sum(n))
 ```
 
-Let's take a look at the word count distribution. Most observations conmtain between 10-40 words.
-
-```{r}
-data_train %>%
-  mutate(n_words = tokenizers::count_words(text)) %>%
-  ggplot(aes(n_words)) +
-  geom_bar() +
-  labs(x = "Number of words per observation",
-       y = "Number of observations")
-```
-
 Set threshold for maximum unique words in data set.
 
 ```{r}
 max_words <- 10000
 ```
 
-Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **cat** (outcome) from **text** (predictor). The predictor is tokenized, stop words are removed, and tokens are filtered (max number of tokens retained and min times a token must appear to be considered at all). Tokens are encoded using **tf-idf**. Finally, data is down-sampled such that the majority class level will have (at most) twice as many rows as the minority level.
+Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **cat** (outcome) from **text** (predictor). The predictor is tokenized, stop words are removed, and tokens are filtered (max number of tokens retained and min times a token must appear in corpus in order to be considered). Tokens are encoded using **tf-idf**. Finally, data is down-sampled such that the majority class level will have (at most) twice as many rows as the minority level.
 
 ```{r create-model-recipe}
 library(themis)
@@ -145,8 +143,8 @@ data_recipe <- recipe(
                                              strip_punct = TRUE)) %>%
                 step_stopwords(text) %>%
                 step_tokenfilter(text, 
-                                 max_tokens = max_words, 
-                                 min_times = 10
+                                 min_times = .01* NROW(data_train), # must be in 1% corpus
+                                 max_tokens = max_words
                                 )  %>%
                 step_tfidf(text) %>%
                 step_downsample(cat, 
@@ -158,21 +156,21 @@ data_recipe
 There is a wide palette of models The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to plug-and-play with models. Below are 2 models, **mlp** (multi-layer perceptron, a single layer neural network) and **random forest**.
 
 ```{r}
-# model <-
-#   mlp(hidden_units = 256, dropout = 0.1, epochs = 20) %>%
-#   set_mode("classification") %>%
-#   # Also set engine-specific `verbose` argument to prevent logging the results:
-#   set_engine("keras", verbose = 1)
+model <-
+  mlp(hidden_units = 128, dropout = 0.1, epochs = num_epochs) %>%
+  set_mode("classification") %>%
+  # Also set engine-specific `verbose` argument to prevent logging the results:
+  set_engine("keras", verbose = 1)
 ```
 
 Use random forest model.
 
 ```{r}
-library(discrim)
-model <- rand_forest() %>%
-  set_mode("classification") %>%
-  set_engine(engine = "ranger", importance = "impurity")
-model
+# library(discrim)
+# model <- rand_forest() %>%
+#   set_mode("classification") %>%
+#   set_engine(engine = "ranger", importance = "impurity")
+# model
 ```
 
 Create [workflow](https://workflows.tidymodels.org) using above recipe and model.
@@ -272,7 +270,7 @@ Final fit (with all training data).
 final_fitted <- last_fit(data_wf, data_split)
 ```
 
-Extract predictions and metrics. Final model looks quite good with a **roc_auc** of 0.981.
+Extract predictions and metrics. The ROC is above 95% which is indicative of a good model.
 
 ```{r}
 final_metrics <- collect_metrics(final_fitted)
@@ -289,7 +287,7 @@ final_predictions %>%
   autoplot(type = "heatmap")
 ```
 
-Plat final model's ROC curve.
+Plot final model's ROC curve.
 
 ```{r}
 final_predictions  %>%
