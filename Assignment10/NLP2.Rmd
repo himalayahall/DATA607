@@ -28,10 +28,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidytext)
 library(textdata)
-
-library(syuzhet)
-library(hcandersenr)
-
 ```
 
 # Introduction
@@ -42,6 +38,14 @@ Notice, there are no chapters in these short stories. Furthermore, number (span)
 
 Use [Syuzhet](https://cran.r-project.org/web/packages/syuzhet/vignettes/syuzhet-vignette.html) sentiment lexicon.
 
+```{r}
+library(syuzhet)     # sentiment lexicon
+library(hcandersenr) # Stories (English) of Hans Christian Andersen
+```
+
+## Tidy data
+
+Read all stories of Hans Christian Andersen into data frame with 'tidy' principles - one word per row. Add line and chapter numbers to each row.
 
 ```{r}
 tidy_books <- hcandersen_en %>%
@@ -54,10 +58,10 @@ tidy_books <- hcandersen_en %>%
     ungroup() %>%
     unnest_tokens(word, text)
 
-tidy_books
+glimpse(tidy_books)
 ```
 
-Load 'The fir tree'.
+Select 'The fir tree' story.
 
 ```{r}
 the_fir_tree <- tidy_books %>% 
@@ -66,33 +70,34 @@ the_fir_tree <- tidy_books %>%
 the_fir_tree
 ```
 
-Since the story is short (253 sentences) we expect the sentiment to fluctuate (if at all) within a short span of sentences. Whereas in novels of Jane Austen we considered sentence spans of length 80, here we will use shorted runs.
+Whereas in novels of Jane Austen we considered sentence spans of length 80, in these short stories we can expect the sentiment to fluctuate within a shorter senetence span. Here we will use a span of 15 sentences for grouping sentiment.
+
+Create sentiment scores using AFINN, NRC, and bing lexicons.  
 
 ```{r}
- hcandersen_en %>% filter(book == 'The fir tree')
-
-```
-
-```{r}
-sent_run_length <- 10
+sent_run_length <- 15
 
 afinn <- the_fir_tree %>% 
-  inner_join(get_sentiments("afinn")) %>% 
+  inner_join(get_sentiments("afinn"), 
+             by = "word") %>% 
   group_by(index = linenumber %/% sent_run_length) %>% 
   summarise(sentiment = sum(value)) %>% 
   mutate(method = "AFINN")
 
 bing_and_nrc <- bind_rows(
   the_fir_tree %>% 
-    inner_join(get_sentiments("bing")) %>%
+    inner_join(get_sentiments("bing"), 
+               by = "word") %>%
     mutate(method = "Bing et al."),
-  the_fir_tree %>% 
+    the_fir_tree %>% 
     inner_join(get_sentiments("nrc") %>% 
                  filter(sentiment %in% c("positive", 
-                                         "negative"))
-    ) %>%
+                                         "negative")),
+               by = "word"
+               ) %>%
     mutate(method = "NRC")) %>%
-  count(method, index = linenumber %/% sent_run_length, sentiment) %>%
+  count(method, 
+        index = linenumber %/% sent_run_length, sentiment) %>%
   pivot_wider(names_from = sentiment,
               values_from = n,
               values_fill = 0) %>% 
@@ -100,16 +105,20 @@ bing_and_nrc <- bind_rows(
 
 ```
 
+Add sentiment score using the Syuzhet sentiment lexicon.
 
 ```{r}
 syuzhet <- the_fir_tree %>% 
-  inner_join(get_sentiment_dictionary()) %>% 
+  inner_join(syuzhet::get_sentiment_dictionary(), 
+             by="word") %>% 
   group_by(index = linenumber %/% sent_run_length) %>% 
   summarise(sentiment = sum(value)) %>% 
   mutate(method = "SYUZHET")
 
 glimpse(syuzhet)
 ```
+
+Plot sentiment analysis for The fir tree.
 
 ```{r}
 bind_rows(afinn, 
@@ -119,12 +128,18 @@ bind_rows(afinn,
   facet_wrap(~method, ncol = 1, scales = "free_y")
 ```
 
+There are 156 books in this collection. Too many to plot together!
 
 ```{r}
-#c('Aunty', 'The windmill', 'Moving day', 'Two brothers', 'The jewish girl', #'Heartache', 'Twelve by the mail', 'The old church bell', 'The fir tree')
+NROW(unique(hcandersen_en$book))
+```
+
+Let's select 5 books at random for sentiment analysis using Syuzhet sentiment lexicon.
+
+```{r}
 books <- c('Aunty', 'The windmill', 'Moving day', 'Two brothers', 'The fir tree')
 
-tidy_books <- hcandersen_en %>%
+tidy_books_5 <- hcandersen_en %>%
   filter(book %in% books) %>%
   group_by(book) %>%
   mutate(
@@ -135,8 +150,8 @@ tidy_books <- hcandersen_en %>%
     ungroup() %>%
     unnest_tokens(word, text)
 
-hca_sentiment <- tidy_books %>%
-  inner_join(get_sentiment_dictionary()) %>% 
+hca_sentiment <- tidy_books_5 %>%
+  inner_join(syuzhet::get_sentiment_dictionary()) %>% 
   mutate(sentiment = value) %>%
   select(-value) %>%
   count(book, index = linenumber %/% sent_run_length, sentiment) #%>%
@@ -144,17 +159,21 @@ hca_sentiment <- tidy_books %>%
 
 ```
 
+Plot.
+
 ```{r}
 ggplot(hca_sentiment, aes(index, sentiment, fill = book)) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~book, ncol = 1, scales = "free_x")
 ```
 
+Create a worlcloud of top 100 works (minus stopwords) from all stories of Hans Christian Andersen.
+
 ```{r}
 library(wordcloud)
 
 tidy_books %>%
-  anti_join(stop_words) %>%
+  anti_join(stop_words, by = "word") %>%
   count(word) %>%
   with(wordcloud(word, n, max.words = 100, scale = c(2.5, 0.25)))
 ```
