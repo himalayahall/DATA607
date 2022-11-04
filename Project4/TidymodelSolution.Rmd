@@ -145,6 +145,23 @@ Knowing that we have a large quantity of data but the data is unbalanced, we dow
 
 Token transformations are done via [textrecipes] (https://www.rdocumentation.org/packages/textrecipes/versions/1.0.10)
 
+Most models work with numeric data, not text. Text data is typically converted into a numeric representation before it can be used to build models. There are a number of techniques for encoding text such as  [id-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) and [word embedding](https://www.tensorflow.org/text/guide/word_embeddings). Both techniques can be used with tidymodels.
+
+Load Stanford GloVE(https://nlp.stanford.edu/pubs/glove.pdf) trained on words from a 6 billion token corpus.
+
+```{r}
+glove6b <- textdata::embedding_glove6b(dimensions = 100)
+glove6b
+```
+
+Each token (word) is represented by a 100 dimension vector. Let's take a look at the vector for the first word 'hello'.
+
+```{r}
+glove6b %>% filter(token == 'hello')
+```
+
+We will use work embedding in the data recipe pipeline to encode predictor variables.
+
 ```{r create-model-recipe}
 library(themis) # for step_downsample
 data_recipe <- recipe(category ~ ., data = data_train)
@@ -158,13 +175,22 @@ data_recipe <- data_recipe %>%
                 # set max tokens (words) for each predictor
                 step_tokenfilter(all_predictors(), max_tokens = 200) %>%
     
+                # remove stopwords (optional)
                 step_stopwords(text) %>%
                 step_stopwords(subject) %>%
-    
+
+                # stemming (optional)
                 step_stem(text) %>%
                 step_stem(subject) %>%
+
+                # merge from and subject (optional)
+                step_tokenmerge(from, subject) %>%
     
-                step_tfidf(all_predictors()) %>%
+                # pretrained Glove word embedding
+                step_word_embeddings(all_predictors(), embeddings = glove6b) %>%
+                
+                # tf-idn encoding is anothr option
+                # step_tfidf(all_predictors()) %>% #TF-IDF word embedding
 
                 step_downsample(category, 
                                 under_ratio = 2 
@@ -329,14 +355,14 @@ conf_mat_resampled(nb_rs, tidy = FALSE) %>%
 
 So far we have been using the training data to both train and evaluate the model (using cross-validation). We can expect that the model **will not** perform quite as well on unseen data.  
 
-So far we have been keeping the test split in our back pocket. Now it's time to use the test data to evaulate our final model. Let's do the final fit - train with full training data and test with testing data.
+So far we have been keeping the test split in our back pocket. Now it's time to use the precious test data to evaluate the final model. Do final fit - train with full training data and test with testing data.
 
 ```{r final-fit-model timeit=TRUE}
 final_fitted <- last_fit(data_wf, data_split, metrics = metrics)
 final_fitted
 ```
 
-Extract predictions and metrics. The ROC is above 95% which is indicative of a good model.
+Extract predictions and metrics. The model has performed extremely well acrss all metrics. 
 
 ```{r}
 final_predictions <- collect_predictions(final_fitted)
