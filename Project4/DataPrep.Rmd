@@ -39,27 +39,45 @@ ReadAndCleanEmail <- function(path) {
         
         skip <- TRUE
         filtered <- ' '
+        from <- ''
+        subject <- ''
         for (l in lines) {
-            if (skip && l == "") {
-                skip = FALSE
-            } else  if (! skip) {
+            if (skip)
+            {
+                if (str_length(l) > 0)
+                {
+                    lc = str_trim(str_to_lower(l), "left")
+                    if (str_length(subject) == 0 && str_starts(lc, "subject:")) {
+                        lc = str_remove(lc, "subject:")
+                        subject = str_squish(lc)
+                    }
+                    else if (str_length(from) == 0 && str_starts(lc, "from:")) {
+                        lc = str_remove(lc, "from:")
+                        from = str_squish(lc)
+                    }
+                }
+                else
+                {
+                    skip = FALSE
+                }
+            } else if (! skip) {
                 filtered <- paste0(filtered, stri_enc_toascii(l))
                 #print(paste0("***: ", skip, ", ", l))
             }
         }
-        return(filtered)
+        return(list(from = from, subject = subject, text = filtered))
 }
 
 ReadEmails <- function(folders, category) {
-    result <- tibble(email_src = c(''), cat = (''), email = c(''))
+    result <- tibble(from = c(''), subject = c(''), email_src = c(''), category = (''), text = c(''))
     for (folder in folders) {
         file_list <- dir(path = folder)
         for (f in file_list) {
             #if (str_starts(email_file, "0001\\.ea7e79d")) {
             path <- paste0(folder, .Platform$file.sep, f)
-            filtered <- ReadAndCleanEmail(path)
-            if (str_length(filtered) > 0) {
-                result <- result %>% add_row(email_src = path, cat = category, email = filtered)
+            email  <- ReadAndCleanEmail(path)
+            if (str_length(email$from) > 0) {
+                result <- result %>% add_row(from = email$from, subject = email$subject, email_src = path, category = category, text = email$text)
             }
             #} #
         }
@@ -77,10 +95,9 @@ spams <- ReadEmails(spam_folders, category = 'spam')
 
 ```{r}
 sms <- bind_rows(spams, easy_hams)
-sms <- sms %>% transmute(category = cat, sms = email)
 ```
 
 ```{r}
-write.csv(sms, file = "jawaid.csv", quote = TRUE)
+write.csv(sms, file = "EMAILSpamCollection.csv", quote = TRUE)
 ```
 
