@@ -54,18 +54,19 @@ library(readtext)
 set.seed(1234)
 ```
 
-Let's extract the number of available cores. We use this during model setup.
+Let's detect the number of available cores. We use this during model setup.
 
-```{r deletec-cpu-cores}
-num_cores <- parallel::detectCores(logical = TRUE)
-num_cores
+```{r detect-cpu-cores}
+detected_cores <- parallel::detectCores(logical = TRUE)
+usable_cores = 1 + (detected_cores / 2)
+usable_cores
 ```
 
 On Unix and Mac we can leverage multiple CPU/core. Comment out on Windows.
 
 ```{r unix-and-mac-only}
 library(doMC)
-registerDoMC(cores = 4)
+registerDoMC(cores = usable_cores)
 ```
 
 # Load data
@@ -82,7 +83,7 @@ We have two data sets are available for building classifiers. One is a collectio
 #         mutate(from = '')
         
 # Email data  is too big to load from [Github](https://github.com/himalayahall/DATA607/blob/main/Project4/EMAILSpamCollection.csv). Download into current 
-df <- read.csv("./EMAILSpamCollection.csv")
+df <- read.csv("./EMAILSpamCollectionFull2.csv")
 
 df <- df %>% 
     filter(text != "") %>%
@@ -113,7 +114,7 @@ data_test <- testing(data_split)
 
 Verify train/test splits have same proportions as original data set. Check.
 
-```{r}
+```{r verify-splits}
 # training set proportions by category
 data_train %>% 
   count(category) %>% 
@@ -182,7 +183,7 @@ Set up re-sampling control.
 
 ```{r control-setup}
 control <- control_resamples(save_pred = TRUE, allow_par = TRUE, parallel_over = "resamples")
-clontrol
+control
 ```
 
 ## Null model
@@ -206,7 +207,7 @@ null_rs <- workflow() %>%
 
 We can see the null model has Accuracy equal to proportion of the majority class and a terrible [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic). Slope of the ROC curve shows the null model is unable to discriminate between the two classes.
 
-```{r}
+```{r roc-plot-null-model}
 null_predictions <- collect_predictions(null_rs)
 null_predictions  %>%
   roc_curve(truth = category, .pred_spam) %>%
@@ -222,7 +223,7 @@ null_rs %>%
 
 The [confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix) confirms that the null model simply guesses the majority class *ham* for each prediction. 
 
-```{r}
+```{r confusion-matrix-null-model}
 conf_mat_resampled(null_rs, tidy = FALSE) %>%
   autoplot(type = "heatmap")
 
@@ -237,7 +238,7 @@ The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to p
 # Randomforest
 model <- rand_forest() %>%
   set_mode("classification") %>%
-  set_engine(engine = "ranger", num.threads = 1 + num_cores / 2, importance = "impurity")
+  set_engine(engine = "ranger", num.threads = usable_cores, importance = "impurity")
 
 
 #Linear support vector machine.
@@ -272,7 +273,7 @@ model
 
 Create [workflow](https://workflows.tidymodels.org) to wrap data recipe and model.
 
-```{r}
+```{r setup-workflow}
 data_wf <- workflow() %>%
                 add_recipe(data_recipe) %>%
                 add_model(model)
@@ -296,14 +297,14 @@ nb_rs <- fit_resamples(
 
 Extract metrics. Metrics look great across the board! In particular, the precision/recall and ROC metrics are very encouraging.
 
-```{r}
+```{r eval-metrics}
 nb_rs_metrics <- collect_metrics(nb_rs)
 nb_rs_metrics
 ```
 
 Plot ROC curve for all folds.
 
-```{r}
+```{r eval-roc-plot}
 nb_rs_predictions <- collect_predictions(nb_rs)
 
 nb_rs_predictions %>%
@@ -319,7 +320,7 @@ nb_rs_predictions %>%
 
 Confusion matrix confirms the model performance is excellent.
 
-```{r}
+```{r eval-confusion-matrix}
 conf_mat_resampled(nb_rs, tidy = FALSE) %>%
   autoplot(type = "heatmap")
 ```
@@ -363,3 +364,4 @@ final_predictions  %>%
     subtitle = "With final random forest classifier on the training set"
   )
 ```
+

@@ -89,15 +89,15 @@ ReadEmails <- function(folders, category) {
 
 ```{r}
 easy_hams <- ReadEmails(easy_ham_folders, category = 'ham')
-#hard_hams <- ReadEmails(hard_ham_folders, category = 'ham')
+hard_hams <- ReadEmails(hard_ham_folders, category = 'ham')
 spams <- ReadEmails(spam_folders, category = 'spam')
 ```
 
 ```{r}
-sms <- bind_rows(spams, easy_hams)
+sms <- bind_rows(spams, easy_hams, hard_hams)
 ```
 
 ```{r}
-write.csv(sms, file = "EMAILSpamCollection.csv", quote = TRUE)
+write.csv(sms, file = "EMAILSpamCollectionFull.csv", quote = TRUE)
 ```
 
