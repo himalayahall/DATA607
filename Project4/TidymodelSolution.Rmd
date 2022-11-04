@@ -21,6 +21,19 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::knit_hooks$set(timeit = local({
+  now = NULL
+  function(before, options) {
+    if (before) {
+      now <<- Sys.time()
+    } else {
+      res = difftime(Sys.time(), now)
+      now <<- NULL
+      # use options$label if you want the chunk label as well
+      paste('Time for this code chunk:', as.character(res))
+    }
+  }})
+)
 ```
 
 # Introduction
@@ -41,15 +54,18 @@ library(readtext)
 set.seed(1234)
 ```
 
+Let's extract the number of available cores. We use this during model setup.
+
 ```{r deletec-cpu-cores}
-parallel::detectCores(logical = TRUE)
+num_cores <- parallel::detectCores(logical = TRUE)
+num_cores
 ```
 
-On Unix and Mac we can leverage multiple cpu/core. Comment out on Windows.
+On Unix and Mac we can leverage multiple CPU/core. Comment out on Windows.
 
 ```{r unix-and-mac-only}
 library(doMC)
-registerDoMC(cores = 2)
+registerDoMC(cores = 4)
 ```
 
 # Load data
@@ -69,8 +85,9 @@ We have two data sets are available for building classifiers. One is a collectio
 df <- read.csv("./EMAILSpamCollection.csv")
 
 df <- df %>% 
-    filter(category != "") %>% 
-    filter(text != "")
+    filter(text != "") %>%
+    mutate(category = factor(category, levels = c('spam', 'ham'))) %>% # order is important - spam first
+    mutate(n_words = tokenizers::count_words(text))
 
 glimpse(df)
 ```
@@ -84,25 +101,9 @@ props <- df %>%
 props
 ```
 
-Mutate category into a factor and add word count column.
+## Data split
 
-```{r factorize-catrgory}
-df <- df %>%
-    mutate(category = as.factor(category)) %>%
-    mutate(n_words = tokenizers::count_words(text))
-    
-glimpse(df)
-```
-
-Take look at the distribution of number of words per observation.
-
-```{r}
-summary(df$n_words)
-```
-
-## Base model
-
-Split into train and test data sets.
+Split into train and test data sets. Test data will be set aside and not used until the final model is tested.
 
 ```{r create-data-splits}
 data_split <- initial_split(df, strata = category)
@@ -110,7 +111,7 @@ data_train <- training(data_split)
 data_test <- testing(data_split)
 ```
 
-Verify train/test splits have the same proportions as original data set. As we see, the training and test splits have the same proportion as original.
+Verify train/test splits have same proportions as original data set. Check.
 
 ```{r}
 # training set proportions by category
@@ -124,44 +125,45 @@ data_test  %>%
   mutate(prop = n/sum(n))
 ```
 
-Set threshold for maximum unique words in data set.
+## Resampling for evaluating performance
 
-```{r}
-max_words <- 10000
+To evaluate model performance during during model selection we will use 10-fold cross-validation. Let's define the folds and make sure folds have same strata as original data.
+
+```{r folds-setup}
+data_folds <- vfold_cv(data_train, strata = category) # defaults to 10 fold, 1 repeats
+data_folds
 ```
 
-Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **category** (outcome) from the following predictors - email **subject**, sender email address (**from**), and the email **text**.  
+## Recipe
+
+Set up model recipe to predict **category** (outcome) from the following predictors - email **subject**, sender email address (**from**), and the email **text**.  
 
 Predictors are tokenized, stop words are removed, tokens are stemmed, and filtered (max number of tokens retained and min times a token must appear in corpus in order to be considered). Finally, tokens are encoded using **tf-idf**. 
 
-Knowing that we have a large quantity of data but the data is unbalanced, we down-sample such that the majority class level will have (at most) twice as many rows as the minority level.  
+Knowing that we have a large quantity of data but the data is unbalanced, we downsample such that the majority class level will have (at most) twice as many rows as the minority level.  
 
 Token transformations are done via [textrecipes] (https://www.rdocumentation.org/packages/textrecipes/versions/1.0.10)
 
 ```{r create-model-recipe}
-#library(themis)
-data_recipe <- recipe(
-                category ~ from + subject + text, data = data_train) %>%
-                step_tokenize(text, 
-                              options = list(lowercase = TRUE, 
-                                             strip_punct = TRUE)) %>%
+library(themis) # for step_downsample
+data_recipe <- recipe(category ~ ., data = data_train)
+data_recipe <- data_recipe %>%
+                # retain these variables for reference (not to be used as model outcome or predictors)
+                update_role(id, email_src, n_words, new_role = "REF") %>%
+                step_tokenize(all_predictors(), 
+                                options = list(lowercase = TRUE, 
+                                strip_punct = TRUE)) %>%
+                
+                # set max tokens (words) for each predictor
+                step_tokenfilter(all_predictors(), max_tokens = 200) %>%
+    
                 step_stopwords(text) %>%
+                step_stopwords(subject) %>%
+    
                 step_stem(text) %>%
-                step_tokenfilter(text, 
-                                 min_times = .01* NROW(data_train), # must be in 1% corpus
-                                 max_tokens = max_words
-                                )  %>%
-                step_tfidf(text) %>%
+                step_stem(subject) %>%
     
-                step_tokenize(from, 
-                              options = list(lowercase = TRUE, 
-                                             strip_punct = TRUE)) %>%
-                step_tfidf(from) %>%
-    
-                step_tokenize(subject, 
-                              options = list(lowercase = TRUE, 
-                                             strip_punct = TRUE)) %>%
-                step_tfidf(subject) %>%
+                step_tfidf(all_predictors()) %>%
 
                 step_downsample(category, 
                                 under_ratio = 2 
@@ -169,19 +171,25 @@ data_recipe <- recipe(
 data_recipe
 ```
 
-To evaluate the model we will use 10-fold cross-validation. Make sure the folds have the same strata as the original data set.
+Set up metrics of interest.
 
-```{r}
-data_folds <- vfold_cv(data_train, strata = category)
-data_folds
+```{r metrix-setup}
+metrics = metric_set(accuracy, roc_auc, pr_auc, precision, recall)
+metrics
+```
+
+Set up re-sampling control.
+
+```{r control-setup}
+control <- control_resamples(save_pred = TRUE, allow_par = TRUE, parallel_over = "resamples")
+clontrol
 ```
 
 ## Null model
 
-Before building classification models it's important to look at the null model. For binary classification the null model always predicts the majority class. The **accuracy** of the null model will equal the proportion of the majority class. For example, if there are 90% hams (not spam) observations in the data set then accuracy of the null model will also be 90%.  
+It's important to look at the **null model** to set up a baseline. For binary classification modeling, the null model always predicts the majority class. Consequently, **accuracy** of null model equals proportion of the majority class. For example, if there are 90% ham (not spam) observations then accuracy of the null model will also be 90%. Another way to look at it is that a model that is 90% accurate is not necessarily any good!
 
-```{r}
-prep(data_recipe, verbose = TRUE)
+```{r cross-validate-null-model timeit=TRUE}
 null_classification <- null_model() %>%
   set_engine("parsnip") %>%
   set_mode("classification")
@@ -191,20 +199,28 @@ null_rs <- workflow() %>%
   add_model(null_classification) %>%
   fit_resamples(
     data_folds, 
-    metrics = metric_set(accuracy, roc_auc, precision, recall),
-    control = control_resamples(save_pred = TRUE)
+    metrics = metrics,
+    control = control
   )
 ```
 
-The null model has high **accuracy** (proportion of the majority class) and a terrible [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic). It has a high [specificity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity) and an abysimal [sensitivity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity).
+We can see the null model has Accuracy equal to proportion of the majority class and a terrible [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic). Slope of the ROC curve shows the null model is unable to discriminate between the two classes.
 
 ```{r}
+null_predictions <- collect_predictions(null_rs)
+null_predictions  %>%
+  roc_curve(truth = category, .pred_spam) %>%
+  autoplot() +
+  labs(
+    color = NULL,
+    title = "ROC curve for observations (spam)",
+    subtitle = "With null classifier on the training set"
+  )
 null_rs %>%
   collect_metrics()
-null_rs
 ```
 
-As expected, the null model simply guesses the majority class *ham* on each prediction. ROC 
+The [confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix) confirms that the null model simply guesses the majority class *ham* for each prediction. 
 
 ```{r}
 conf_mat_resampled(null_rs, tidy = FALSE) %>%
@@ -212,16 +228,19 @@ conf_mat_resampled(null_rs, tidy = FALSE) %>%
 
 ```
 
+## Model setup
+
 The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to plug-and-play with models. Below are some models that we can use - un-comment to select.
 
-Random forest.
-
 ```{r models}
+
+# Randomforest
 model <- rand_forest() %>%
   set_mode("classification") %>%
-  set_engine(engine = "ranger", importance = "impurity")
+  set_engine(engine = "ranger", num.threads = 1 + num_cores / 2, importance = "impurity")
 
-# Linear support vector machine.
+
+#Linear support vector machine.
 # model <- svm_linear() %>%
 #   set_mode("classification") %>%
 #   set_engine(engine = "kernlab")
@@ -249,48 +268,47 @@ model <- rand_forest() %>%
 model
 ```
 
-Create [workflow](https://workflows.tidymodels.org) using above recipe and model. A workflow wraps the data recipe and model.
+## Workflow setup
+
+Create [workflow](https://workflows.tidymodels.org) to wrap data recipe and model.
 
 ```{r}
 data_wf <- workflow() %>%
-            add_recipe(data_recipe) %>%
-            add_model(model)
+                add_recipe(data_recipe) %>%
+                add_model(model)
 data_wf
 ```
 
-Define metrics of interest.
-
-```{r}
-metrics = metric_set(accuracy, roc_auc, pr_auc, precision, recall)
-metrics
-```
+## Model training
 
 Train the model on folds, record desired metrics, save predictions.
 
-```{r}
+```{r cross-validate-model timeit=TRUE}
 nb_rs <- fit_resamples(
-  data_wf,
-  data_folds,
-  metrics = metrics,
-  control = control_resamples(save_pred = TRUE)
+    data_wf,
+    data_folds,
+    metrics = metrics,
+    control = control
 )
 ```
 
-Extract metrics and predictions.
+## Model evaluation
+
+Extract metrics. Metrics look great across the board! In particular, the precision/recall and ROC metrics are very encouraging.
 
 ```{r}
 nb_rs_metrics <- collect_metrics(nb_rs)
-nb_rs_predictions <- collect_predictions(nb_rs)
-
 nb_rs_metrics
 ```
 
 Plot ROC curve for all folds.
 
 ```{r}
+nb_rs_predictions <- collect_predictions(nb_rs)
+
 nb_rs_predictions %>%
   group_by(id) %>%
-  roc_curve(truth = category, .pred_ham) %>%
+  roc_curve(truth = category, .pred_spam) %>%
   autoplot() +
   labs(
     color = NULL,
@@ -299,7 +317,7 @@ nb_rs_predictions %>%
   )
 ```
 
-Confusion matrix.
+Confusion matrix confirms the model performance is excellent.
 
 ```{r}
 conf_mat_resampled(nb_rs, tidy = FALSE) %>%
@@ -308,18 +326,20 @@ conf_mat_resampled(nb_rs, tidy = FALSE) %>%
 
 ## Final model
 
-Final fit (with all training data).
+So far we have been using the training data to both train and evaluate the model (using cross-validation). We can expect that the model **will not** perform quite as well on unseen data.  
 
-```{r}
+So far we have been keeping the test split in our back pocket. Now it's time to use the test data to evaulate our final model. Let's do the final fit - train with full training data and test with testing data.
+
+```{r final-fit-model timeit=TRUE}
 final_fitted <- last_fit(data_wf, data_split, metrics = metrics)
+final_fitted
 ```
 
 Extract predictions and metrics. The ROC is above 95% which is indicative of a good model.
 
 ```{r}
-final_metrics <- collect_metrics(final_fitted)
 final_predictions <- collect_predictions(final_fitted)
-
+final_metrics <- collect_metrics(final_fitted)
 final_metrics
 ```
 
@@ -335,7 +355,7 @@ Plot final model's ROC curve.
 
 ```{r}
 final_predictions  %>%
-  roc_curve(truth = category, .pred_ham) %>%
+  roc_curve(truth = category, .pred_spam) %>%
   autoplot() +
   labs(
     color = NULL,
