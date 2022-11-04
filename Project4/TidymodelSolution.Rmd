@@ -189,7 +189,7 @@ data_recipe <- data_recipe %>%
                 # pretrained Glove word embedding
                 step_word_embeddings(all_predictors(), embeddings = glove6b) %>%
                 
-                # tf-idn encoding is anothr option
+                # tf-idf encoding is anothr option
                 # step_tfidf(all_predictors()) %>% #TF-IDF word embedding
 
                 step_downsample(category, 
