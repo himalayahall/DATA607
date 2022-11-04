@@ -57,43 +57,41 @@ registerDoMC(cores = 2)
 We have two data sets are available for building classifiers. One is a collection of SMS messages, the other is a (much larger) collection of emails. SMS messages are shorter and less noisy. Email messages are longer and contain significant noise (Html tags, email headers, etc.).
 
 ```{r load-data}
-df <- read.delim("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project4/SMSSpamCollection.txt",
-                  sep = '\t',
-                  col.names = c('cat', 'text'),
-                  quote = "")
-
+# df <- read.delim("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project4/SMSSpamCollection.txt",
+#                   sep = '\t',
+#                   col.names = c("category", "text"),
+#                   quote = "")
+# df <- df %>% 
+#         mutate(subject = '') %>%
+#         mutate(from = '')
+        
 # Email data  is too big to load from [Github](https://github.com/himalayahall/DATA607/blob/main/Project4/EMAILSpamCollection.csv). Download into current 
-# df <- read.csv("./EMAILSpamCollection.csv")
+df <- read.csv("./EMAILSpamCollection.csv")
 
-df <- df %>% filter(cat != "") %>% filter(text != "")
+df <- df %>% 
+    filter(category != "") %>% 
+    filter(text != "")
+
 glimpse(df)
 ```
 
-We expect both data sets to be unbalanced, i.e. number of spam observations is a minority class.
+We expect data sets to be unbalanced, i.e. number of spam observations is a minority class. This class imbalance will influence how we build ML models.
 
 ```{r props}
 props <- df %>% 
-  count(cat) %>% 
+  count(category) %>% 
   mutate(prop = n/sum(n))
 props
 ```
 
 Mutate category into a factor and add word count column.
 
-```{r factorize-cat}
+```{r factorize-catrgory}
 df <- df %>%
-    mutate(cat = as.factor(cat)) %>%
+    mutate(category = as.factor(category)) %>%
     mutate(n_words = tokenizers::count_words(text))
     
 glimpse(df)
-```
-
-Look at the proportion. Notice that spam observations are in minority. This class imbalance will have an impact of how we build ML models.
-
-```{r}
-df %>% 
-  count(cat) %>% 
-  mutate(prop = n/sum(n))
 ```
 
 Take look at the distribution of number of words per observation.
@@ -107,7 +105,7 @@ summary(df$n_words)
 Split into train and test data sets.
 
 ```{r create-data-splits}
-data_split <- initial_split(df, strata = cat)
+data_split <- initial_split(df, strata = category)
 data_train <- training(data_split)
 data_test <- testing(data_split)
 ```
@@ -117,12 +115,12 @@ Verify train/test splits have the same proportions as original data set. As we s
 ```{r}
 # training set proportions by category
 data_train %>% 
-  count(cat) %>% 
+  count(category) %>% 
   mutate(prop = n/sum(n))
 
 # test set proportions by category
 data_test  %>% 
-  count(cat) %>% 
+  count(category) %>% 
   mutate(prop = n/sum(n))
 ```
 
@@ -132,12 +130,18 @@ Set threshold for maximum unique words in data set.
 max_words <- 10000
 ```
 
-Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **cat** (outcome) from **text** (predictor). The predictor is tokenized, stop words are removed, tokens are stemmed, and tokens are filtered (max number of tokens retained and min times a token must appear in corpus in order to be considered). Tokens are encoded using **tf-idf**. Finally, data is down-sampled such that the majority class level will have (at most) twice as many rows as the minority level. Token transformations are done via [textrecipes] (https://www.rdocumentation.org/packages/textrecipes/versions/1.0.10)
+Set up feature engineering recipe to get the data ready mo modeling. We set it up to predict **category** (outcome) from the following predictors - email **subject**, sender email address (**from**), and the email **text**.  
+
+Predictors are tokenized, stop words are removed, tokens are stemmed, and filtered (max number of tokens retained and min times a token must appear in corpus in order to be considered). Finally, tokens are encoded using **tf-idf**. 
+
+Knowing that we have a large quantity of data but the data is unbalanced, we down-sample such that the majority class level will have (at most) twice as many rows as the minority level.  
+
+Token transformations are done via [textrecipes] (https://www.rdocumentation.org/packages/textrecipes/versions/1.0.10)
 
 ```{r create-model-recipe}
-library(themis)
+#library(themis)
 data_recipe <- recipe(
-                cat ~ text, data = data_train) %>%
+                category ~ from + subject + text, data = data_train) %>%
                 step_tokenize(text, 
                               options = list(lowercase = TRUE, 
                                              strip_punct = TRUE)) %>%
@@ -148,10 +152,28 @@ data_recipe <- recipe(
                                  max_tokens = max_words
                                 )  %>%
                 step_tfidf(text) %>%
-                step_downsample(cat, 
+    
+                step_tokenize(from, 
+                              options = list(lowercase = TRUE, 
+                                             strip_punct = TRUE)) %>%
+                step_tfidf(from) %>%
+    
+                step_tokenize(subject, 
+                              options = list(lowercase = TRUE, 
+                                             strip_punct = TRUE)) %>%
+                step_tfidf(subject) %>%
+
+                step_downsample(category, 
                                 under_ratio = 2 
                                 )
 data_recipe
+```
+
+To evaluate the model we will use 10-fold cross-validation. Make sure the folds have the same strata as the original data set.
+
+```{r}
+data_folds <- vfold_cv(data_train, strata = category)
+data_folds
 ```
 
 ## Null model
@@ -174,14 +196,15 @@ null_rs <- workflow() %>%
   )
 ```
 
-The null model high **accuracy** (same as proportion of the majority class) and a terrible [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic). It has a high [specificity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity) and an abysimal [sensitivity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity).
+The null model has high **accuracy** (proportion of the majority class) and a terrible [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic). It has a high [specificity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity) and an abysimal [sensitivity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity).
 
 ```{r}
 null_rs %>%
   collect_metrics()
+null_rs
 ```
 
-As expected, the null model simply guesses the majority class *ham* on each prediction.
+As expected, the null model simply guesses the majority class *ham* on each prediction. ROC 
 
 ```{r}
 conf_mat_resampled(null_rs, tidy = FALSE) %>%
@@ -235,13 +258,6 @@ data_wf <- workflow() %>%
 data_wf
 ```
 
-To evaluate the model we will use 10-fold cross-validation. Make sure the folds have the same strata as the original data set.
-
-```{r}
-data_folds <- vfold_cv(data_train, strata = cat)
-data_folds
-```
-
 Define metrics of interest.
 
 ```{r}
@@ -274,7 +290,7 @@ Plot ROC curve for all folds.
 ```{r}
 nb_rs_predictions %>%
   group_by(id) %>%
-  roc_curve(truth = cat, .pred_ham) %>%
+  roc_curve(truth = category, .pred_ham) %>%
   autoplot() +
   labs(
     color = NULL,
@@ -311,7 +327,7 @@ The confusion matrix confirms the model is performing well.
 
 ```{r}
 final_predictions %>%
-  conf_mat(truth = cat, estimate = .pred_class) %>%
+  conf_mat(truth = category, estimate = .pred_class) %>%
   autoplot(type = "heatmap")
 ```
 
@@ -319,7 +335,7 @@ Plot final model's ROC curve.
 
 ```{r}
 final_predictions  %>%
-  roc_curve(truth = cat, .pred_ham) %>%
+  roc_curve(truth = category, .pred_ham) %>%
   autoplot() +
   labs(
     color = NULL,
