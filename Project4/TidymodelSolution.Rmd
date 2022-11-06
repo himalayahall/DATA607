@@ -85,7 +85,7 @@ df <- read.csv("./EMAILSpamCollectionFull.csv")
 
 Strip HTML tags and convert category into factor.
 
-```{r}
+```{r clean-data}
 df <- df %>% 
     filter(text != "") %>%
     mutate(text = str_replace_all(text, "<.*?>", "")) %>% # strip HTML tags
