@@ -78,18 +78,21 @@ We have two data sets are available for building classifiers. One is a collectio
 #                   sep = '\t',
 #                   col.names = c("category", "text"),
 #                   quote = "")
-# df <- df %>% 
-#         mutate(subject = '') %>%
-#         mutate(from = '')
-        
+
 # Email data  is too big to load from [Github](https://github.com/himalayahall/DATA607/blob/main/Project4/EMAILSpamCollectionFull.csv). Download into current 
 df <- read.csv("./EMAILSpamCollectionFull.csv")
+```
 
+Strip HTML tags and convert category into factor.
+
+```{r}
 df <- df %>% 
     filter(text != "") %>%
-    mutate(text = str_replace_all(text, "<.*?>", "")) %>% # strip out HTML tags
+    mutate(text = str_replace_all(text, "<.*?>", "")) %>% # strip HTML tags
+    mutate(text = str_trim(text, "both")) %>%
     mutate(category = factor(category, levels = c('spam', 'ham'))) %>% # order is important - spam first
     mutate(n_words = tokenizers::count_words(text))
+
 glimpse(df)
 ```
 
