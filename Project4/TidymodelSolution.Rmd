@@ -87,9 +87,9 @@ df <- read.csv("./EMAILSpamCollectionFull.csv")
 
 df <- df %>% 
     filter(text != "") %>%
+    mutate(text = str_replace_all(text, "<.*?>", "")) %>% # strip out HTML tags
     mutate(category = factor(category, levels = c('spam', 'ham'))) %>% # order is important - spam first
     mutate(n_words = tokenizers::count_words(text))
-
 glimpse(df)
 ```
 
@@ -128,7 +128,7 @@ data_test  %>%
 
 ## Resampling for evaluating performance
 
-To evaluate model performance during during model selection we will use 10-fold cross-validation. Let's define the folds and make sure folds have same strata as original data.
+To evaluate model performance during during model selection we will use 10-fold Cross-Validation. Let's define the folds and make sure folds have same strata as original data.
 
 ```{r folds-setup}
 data_folds <- vfold_cv(data_train, strata = category) # defaults to 10 fold, 1 repeats
@@ -145,7 +145,7 @@ Knowing that we have a large quantity of data but the data is unbalanced, we dow
 
 Token transformations are done via [textrecipes] (https://www.rdocumentation.org/packages/textrecipes/versions/1.0.10)
 
-Most models work with numeric data, not text. Text data is typically converted into a numeric representation before it can be used to build models. There are a number of techniques for encoding text such as  [id-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) and [word embedding](https://www.tensorflow.org/text/guide/word_embeddings). Both techniques can be used with tidymodels.
+Most models work with numeric data, not text. Text data is typically converted into a numeric representation before it can be used to build models. There are a number of techniques for encoding text such as  [Tf-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) and [word embedding](https://www.tensorflow.org/text/guide/word_embeddings). Both techniques can be used with tidymodels.
 
 Load Stanford GloVE(https://nlp.stanford.edu/pubs/glove.pdf) trained on words from a 6 billion token corpus.
 
@@ -186,10 +186,10 @@ data_recipe <- data_recipe %>%
                 # merge from and subject (optional)
                 step_tokenmerge(from, subject) %>%
     
-                # pretrained Glove word embedding
+                # GloVE word embedding
                 step_word_embeddings(all_predictors(), embeddings = glove6b) %>%
                 
-                # tf-idf encoding is anothr option
+                # tf-idf encoding is iyet another option
                 # step_tfidf(all_predictors()) %>% #TF-IDF word embedding
 
                 step_downsample(category, 
@@ -231,7 +231,7 @@ null_rs <- workflow() %>%
   )
 ```
 
-We can see the null model has Accuracy equal to proportion of the majority class and a terrible [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic). Slope of the ROC curve shows the null model is unable to discriminate between the two classes.
+We can see the null model has Accuracy equal to proportion of the majority class and a very low [ROC](https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc). Slope of the ROC curve shows the null model is unable to discriminate between the two classes.
 
 ```{r roc-plot-null-model}
 null_predictions <- collect_predictions(null_rs)
@@ -247,7 +247,7 @@ null_rs %>%
   collect_metrics()
 ```
 
-The [confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix) confirms that the null model simply guesses the majority class *ham* for each prediction. 
+The [confusion matrix](https://www.sciencedirect.com/topics/engineering/confusion-matrix) confirms that the null model simply guesses the majority class *ham* for each prediction. 
 
 ```{r confusion-matrix-null-model}
 conf_mat_resampled(null_rs, tidy = FALSE) %>%
@@ -308,7 +308,7 @@ data_wf
 
 ## Model training
 
-Train the model on folds, record desired metrics, save predictions.
+Train the model using Cross-Validation, record desired metrics, save predictions.
 
 ```{r cross-validate-model timeit=TRUE}
 nb_rs <- fit_resamples(
