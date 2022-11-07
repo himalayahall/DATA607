@@ -265,10 +265,10 @@ The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to p
 ```{r models}
 
 # Randomforest
+# https://cran.r-project.org/web/packages/ranger/ranger.pdf
 model <- rand_forest() %>%
   set_mode("classification") %>%
-  set_engine(engine = "ranger", num.threads = usable_cores, importance = "impurity")
-
+  set_engine(engine = "ranger", importance = "impurity")
 
 #Linear support vector machine.
 # model <- svm_linear() %>%
@@ -313,13 +313,20 @@ data_wf
 
 Train the model using Cross-Validation, record desired metrics, save predictions.
 
+> In random forests, there is no need for cross-validation or a separate test set to get an unbiased estimate of the test set error. It is estimated internally, during the run.
+
 ```{r cross-validate-model timeit=TRUE}
-nb_rs <- fit_resamples(
-    data_wf,
-    data_folds,
-    metrics = metrics,
-    control = control
-)
+model_cls <- class(model)
+if (model_cls[1] != "rand_forest") {
+    nb_rs <- fit_resamples(
+        data_wf,
+        data_folds,
+        metrics = metrics,
+        control = control
+    )
+    nb_rs_metrics <- collect_metrics(nb_rs)
+    print(nb_rs_metrics)
+}
 ```
 
 ## Model evaluation
@@ -327,31 +334,36 @@ nb_rs <- fit_resamples(
 Extract metrics. Metrics look great across the board! In particular, the precision/recall and ROC metrics are very encouraging.
 
 ```{r eval-metrics}
-nb_rs_metrics <- collect_metrics(nb_rs)
-nb_rs_metrics
+if (model_cls[1] != "rand_forest") {
+    nb_rs_metrics <- collect_metrics(nb_rs)
+    nb_rs_metrics
+}
 ```
 
 Plot ROC curve for all folds.
 
 ```{r eval-roc-plot}
-nb_rs_predictions <- collect_predictions(nb_rs)
-
-nb_rs_predictions %>%
-  group_by(id) %>%
-  roc_curve(truth = category, .pred_spam) %>%
-  autoplot() +
-  labs(
-    color = NULL,
-    title = "ROC curve for observations (ham)",
-    subtitle = "Each resample fold is shown in a different color"
-  )
+if (model_cls[1] != "rand_forest") {
+    nb_rs_predictions <- collect_predictions(nb_rs)
+    nb_rs_predictions %>%
+      group_by(id) %>%
+      roc_curve(truth = category, .pred_spam) %>%
+      autoplot() +
+      labs(
+        color = NULL,
+        title = "ROC curve for observations (ham)",
+        subtitle = "Each resample fold is shown in a different color"
+      )
+}
 ```
 
 Confusion matrix confirms the model performance is excellent.
 
 ```{r eval-confusion-matrix}
-conf_mat_resampled(nb_rs, tidy = FALSE) %>%
-  autoplot(type = "heatmap")
+if (model_cls[1] != "rand_forest") {
+    conf_mat_resampled(nb_rs, tidy = FALSE) %>%
+    autoplot(type = "heatmap")
+}
 ```
 
 ## Final model
