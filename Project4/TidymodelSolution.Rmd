@@ -38,7 +38,7 @@ knitr::knit_hooks$set(timeit = local({
 
 # Introduction
 
-In this markdown we will use [tidymodels](https://www.tidymodels.org) to build ham/spam classifiers for SMS/Email messages. The library provides a framework for modeling and machine learning using [tidyverse](https://www.tidyverse.org) principles.
+In this markdown we will use [tidymodels](https://www.tidymodels.org) to build ham/spam classifiers for email messages. The library provides a framework for modeling and machine learning using [tidyverse](https://www.tidyverse.org) principles.
 
 # Load library
 
@@ -71,15 +71,9 @@ registerDoMC(cores = usable_cores)
 
 # Load data
 
-We have two data sets are available for building classifiers. One is a collection of SMS messages, the other is a (much larger) collection of emails. SMS messages are shorter and less noisy. Email messages are longer and contain significant noise (Html tags, email headers, etc.).
+Email data  is too big to load from [Github](https://github.com/himalayahall/DATA607/blob/main/Project4/EMAILSpamCollectionFull.csv). Download into current working directory.
 
 ```{r load-data}
-# df <- read.delim("https://raw.githubusercontent.com/himalayahall/DATA607/main/Project4/SMSSpamCollection.txt",
-#                   sep = '\t',
-#                   col.names = c("category", "text"),
-#                   quote = "")
-
-# Email data  is too big to load from [Github](https://github.com/himalayahall/DATA607/blob/main/Project4/EMAILSpamCollectionFull.csv). Download into current 
 df <- read.csv("./EMAILSpamCollectionFull.csv")
 ```
 
@@ -170,7 +164,7 @@ library(themis) # for step_downsample
 data_recipe <- recipe(category ~ ., data = data_train)
 data_recipe <- data_recipe %>%
                 # retain these variables for reference (not to be used as model outcome or predictors)
-                update_role(id, email_src, n_words, new_role = "REF") %>%
+                update_role(id, n_words, new_role = "REF") %>%
                 step_tokenize(all_predictors(), 
                                 options = list(lowercase = TRUE, 
                                 strip_punct = TRUE)) %>%
@@ -268,7 +262,7 @@ The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to p
 # https://cran.r-project.org/web/packages/ranger/ranger.pdf
 model <- rand_forest() %>%
   set_mode("classification") %>%
-  set_engine(engine = "ranger", importance = "impurity", verbose = T)
+  set_engine(engine = "ranger", importance = "impurity")
 
 #Linear support vector machine.
 # model <- svm_linear() %>%
@@ -288,8 +282,7 @@ model <- rand_forest() %>%
 # model
 
 # Multi-layer perceptron, a single layer neural network.
-# num_epochs = 50 # for SMS data set
-# num_epochs = 50 # for Email data set
+# num_epochs = 20
 # model <- mlp(hidden_units = 128, dropout = 0.1, epochs = num_epochs) %>%
 #   set_mode("classification") %>%
 #   # Also set engine-specific `verbose` argument to prevent logging the results:
