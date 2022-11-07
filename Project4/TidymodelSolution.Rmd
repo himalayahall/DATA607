@@ -268,7 +268,7 @@ The [tidymodels](https://tidymodels.tidymodels.org) framework makes it easy to p
 # https://cran.r-project.org/web/packages/ranger/ranger.pdf
 model <- rand_forest() %>%
   set_mode("classification") %>%
-  set_engine(engine = "ranger", importance = "impurity")
+  set_engine(engine = "ranger", importance = "impurity", verbose = T)
 
 #Linear support vector machine.
 # model <- svm_linear() %>%
