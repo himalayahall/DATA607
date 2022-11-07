@@ -23,7 +23,7 @@ library(tidyverse)
 library(readtext)
 ```
 
-# Load data
+# Data
 
 Download data, untar, and unzip. In RStudio, set current working directory to root folder where data was unzipped.
 
@@ -35,7 +35,37 @@ spam_folders <- c('./ham_spam_dataset/spam/', './ham_spam_dataset/spam 2/', './h
 
 ```
 
-Create functions to read and clean emails.
+# Discover emails
+
+Define function to iterate over folders and build a list of files. This is used in parralel data prep.
+
+```{r par-find-emails}
+#
+# Find email files.
+# Params:
+#   cat   : category, ham/spam
+# folders : folders to scan
+#
+# Return:
+#   Tibble with category, file path, file name
+#
+FindCategoryEmails <- function(cat, folders) {
+     # build list of files to process
+    result <- tibble(category = c(''), path = c(''), file_name = c(''))
+    for (folder in folders) {
+        file_list <- dir(path = folder)
+        for (f in file_list) {
+            if (file.exists(paste0(folder, f))) {
+                result <- result %>% add_row(category = cat, path = folder, file_name = f)
+             }
+        }
+    }
+    result <- result %>% filter(!row_number() %in% c(1))
+    return (result)
+}
+```
+
+Functions to read and clean emails. These are used in non-parallel data prep.
 ```{r}
 library(stringi)
 
@@ -133,22 +163,154 @@ ReadEmails <- function(folders, category, verbose = FALSE) {
 }
 ```
 
-Process folders
+Process folders in non-parallel data prep.
 ```{r}
-easy_hams <- ReadEmails(easy_ham_folders, category = 'ham', verbose = TRUE)
-hard_hams <- ReadEmails(hard_ham_folders, category = 'ham', verbose = TRUE)
-spams <- ReadEmails(spam_folders, category = 'spam', verbose = TRUE)
+# easy_hams <- ReadEmails(easy_ham_folders, category = 'ham', verbose = TRUE)
+# hard_hams <- ReadEmails(hard_ham_folders, category = 'ham', verbose = TRUE)
+# spams <- ReadEmails(spam_folders, category = 'spam', verbose = TRUE)
 ```
 
-Combine data frames.
+Combine data frames in non-parallel data prep.
 
 ```{r}
-sms <- bind_rows(spams, easy_hams, hard_hams)
+#sms <- bind_rows(spams, easy_hams, hard_hams)
 ```
 
-Write output.
+Write output in non-parallel data prep.
 
 ```{r}
-write.csv(sms, file = "EMAILSpamCollectionFull.csv", quote = TRUE)
+#write.csv(sms, file = "EMAILSpamCollectionFull.csv", quote = TRUE)
 ```
+
+# Parallel processing
+
+To efficiently process large data set parallel processing libraries.
+
+```{r par-load-library}
+library(doParallel)
+library(parallel)
+```
+
+Detect cores, start localhost cluster.
+
+```{r par-start-cluster}
+num_cores <- detectCores(logical = TRUE)
+num_cores
+
+cluster <- makeCluster(1 + (num_cores / 2))
+registerDoParallel(cluster)
+1 + (num_cores / 2)
+```
+
+Find all email that are to bve processed.
+
+```{r find-all-emails}
+easy_hams <- FindCategoryEmails(cat = 'ham', easy_ham_folders)
+hard_hams <- FindCategoryEmails(cat = 'ham', hard_ham_folders)
+spams <- FindCategoryEmails(cat = 'spam', spam_folders)
+all_emails <- bind_rows(easy_hams, hard_hams, spams)
+glimpse(all_emails)
+```
+
+Generate unique ID for each email that's to be processed.
+
+```{r par-generate-email-id}
+seq_id_all <- seq_along(1:NROW(all_emails))
+glimpse(seq_id_all)
+```
+
+Create function that will be run in cluster.
+
+```{r par-create-function}
+#
+# Read and clean an email
+# Params:
+#   file_index: index of email in all_emails tibble. The all_email tibble will bne exported into the cluster
+# Return:
+#   list containing from, subject, category, text
+#
+ReadAndCleanEmailParallel <- function(...) {
+
+    library(readtext)
+    library(dplyr)
+    library(stringi)
+    library(stringr)
+        
+    # get index of file to be processed
+    file_index <- (...)
+    
+    full_path <- paste0(all_emails$path[file_index], all_emails$file_name[file_index])
+    if (! file.exists(full_path)) {
+        return (list(from = '', subject = '', category = all_emails$category[file_index], text = ''))
+    }
+    
+    con <- file(full_path, encoding = 'UTF-8')
+    lines <- readLines(con, skipNul = TRUE)
+    close(con = con)
+    
+    # Email headers are followed by a single blank line before the  body.
+    # Use this fact to skip email headers. Note: not perfect because emails
+    # may contain headers from email chains.
+    skip <- TRUE
+    filtered <- ' '
+    from <- ''
+    subject <- ''
+    for (l in lines) {
+        if (skip)
+        {
+            if (str_length(l) > 0)
+            {
+                lc = str_trim(str_to_lower(l), "left")
+                if (str_length(subject) == 0 && str_starts(lc, "subject:")) {
+                    lc = str_remove(lc, "subject:")
+                    subject = str_squish(lc)
+                }
+                else if (str_length(from) == 0 && str_starts(lc, "from:")) {
+                    lc = str_remove(lc, "from:")
+                    from = str_squish(lc)
+                }
+            }
+            else
+            {
+                skip = FALSE
+            }
+        } else if (! skip) {
+            filtered <- paste0(filtered, stri_enc_toascii(l))
+        }
+    }
+    return(list(from = from, subject = subject, category = all_emails$category[file_index], text = filtered))    
+}
+```
+
+Export function name and email data to the cluster.
+
+```{r par-export-namespace}
+clusterExport(cluster, list('ReadAndCleanEmailParallel', 'all_emails'))
+```
+
+Start processing and time execution. Note the time taken to process 9K+ emails is a fraction of the time taken using a single CPU. 
+
+```{r par-process-emails}
+system.time(
+  results <- c(parLapply(cluster, seq_id_all, fun=ReadAndCleanEmailParallel))
+)
+```
+
+Stop cluster.
+
+```{r par-stop-cluster}
+stopCluster(cluster)
+```
+
+Convert cluster result (list of lists) into a tibble.
+
+```{r par-create-tibble}
+res_tibble <- results %>% map_dfr(as_tibble, .name_repair = "universal")
+```
+
+Write output
+```{r par-output}
+write.csv(res_tibble, file = "EMAILSpamCollectionFull.csv", quote = TRUE)
+```
+
 
