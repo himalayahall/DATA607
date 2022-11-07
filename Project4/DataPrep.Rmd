@@ -9,34 +9,53 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Intro
+
+>It can be useful to be able to classify new "test" documents using already classified "training" documents.  A common example is using a corpus of labeled spam and ham (non-spam) e-mails to predict whether or not a new document is spam.  
+> For this project, you can start with a spam/ham dataset, then predict the class of new documents (either withheld from the training dataset or from another source such as your own spam folder).   One example corpus:   https://spamassassin.apache.org/old/publiccorpus/ 
+
+Process [corpus](https://spamassassin.apache.org/old/publiccorpus/) of ham/spam emails and generate one CSV file that can be used for building ML classifiers.
+
+# Load library
+
 ```{r}
 library(tidyverse)
 library(readtext)
-library(stringi)
-library(textclean)
 ```
 
-```{r}
-easy_ham_folders <- c('./ham_spam_dataset/easy_ham/', './ham_spam_dataset/easy_ham 2/', './ham_spam_dataset/easy_ham_2/')
-hard_ham_folders <- c('./ham_spam_dataset/hard_ham/', './ham_spam_dataset/hard_ham 2/')
+# Load data
 
-all_ham_folders <- easy_ham_folders
-all_ham_folders <- append(all_ham_folders, hard_ham_folders)
+Download data, untar, and unzip. In RStudio, set current working directory to root folder where data was unzipped.
+
+```{r configure-data-folders}
+easy_ham_folders <- c('./ham_spam_dataset/easy_ham/', './ham_spam_dataset/easy_ham 2/')
+hard_ham_folders <- c('./ham_spam_dataset/hard_ham/', './ham_spam_dataset/hard_ham 2/')
 
 spam_folders <- c('./ham_spam_dataset/spam/', './ham_spam_dataset/spam 2/', './ham_spam_dataset/spam_2/', './ham_spam_dataset/spam_2 2')
 
 ```
 
+Create functions to read and clean emails.
 ```{r}
 library(stringi)
 
-ReadAndCleanEmail <- function(path) {
-        print(path)
+#
+# Read and clean one email
+# Args:
+#    path: full path to email file
+#    verbose: True to report progress
+# Return:
+#    List with 3 named elements: subject, from, text
+#
+ReadAndCleanEmail <- function(path, verbose = FALSE) {
         
         con <- file(path, encoding = 'UTF-8')
         lines <- readLines(con, skipNul = TRUE)
         close(con = con)
         
+        # Email headers are followed by a single blank line before the  body.
+        # Use this fact to skip email headers. Note: not perfect because emails
+        # may contain headers from email chains.
         skip <- TRUE
         filtered <- ' '
         from <- ''
@@ -62,40 +81,72 @@ ReadAndCleanEmail <- function(path) {
                 }
             } else if (! skip) {
                 filtered <- paste0(filtered, stri_enc_toascii(l))
-                #print(paste0("***: ", skip, ", ", l))
             }
         }
         return(list(from = from, subject = subject, text = filtered))
 }
 
-ReadEmails <- function(folders, category) {
-    result <- tibble(from = c(''), subject = c(''), email_src = c(''), category = (''), text = c(''))
+#
+# Read emails
+# 
+# Args:
+#   folders : list of folders to scan for email files
+#   category: ham or spam
+#   verbose: True to report progress
+# Return:
+#   Tibble with 3 columns: from, subject, category, text
+#
+ReadEmails <- function(folders, category, verbose = FALSE) {
+    
+    # build list of files to process
+    file_list <- c()
     for (folder in folders) {
         file_list <- dir(path = folder)
         for (f in file_list) {
-            #if (str_starts(email_file, "0001\\.ea7e79d")) {
-            path <- paste0(folder, .Platform$file.sep, f)
-            email  <- ReadAndCleanEmail(path)
-            if (str_length(email$from) > 0) {
-                result <- result %>% add_row(from = email$from, subject = email$subject, email_src = path, category = category, text = email$text)
-            }
-            #} #
+           path <- paste0(folder, .Platform$file.sep, f)
+           append(file_list, path)
         }
+    }
+
+    # process files
+    processed <- 0
+    result <- tibble(from = c(''), subject = c(''), email_src = c(''), category = (''), text = c(''))
+    for (f in file_list) {
+        email  <- ReadAndCleanEmail(path, verbose)
+        if (str_length(email$from) > 0) {
+            result <- result %>% add_row(from = email$from, subject = email$subject, email_src = path, category = category, text = email$text)
+        }
+        
+        if (verbose) {
+            processed <- processed + 1
+            percent <- 100.0 * (processed / NROW(file_list))
+            if (percent %% 10 == 0) {
+                print(paste0("Progress: ", percent, "%"))
+            }
+        }
+    }
+    
+    if (verbose) {
+        print(paste0("Progress: 100%"))
     }
     return (result)
 }
 ```
 
-
+Process folders
 ```{r}
-easy_hams <- ReadEmails(easy_ham_folders, category = 'ham')
-hard_hams <- ReadEmails(hard_ham_folders, category = 'ham')
-spams <- ReadEmails(spam_folders, category = 'spam')
+easy_hams <- ReadEmails(easy_ham_folders, category = 'ham', verbose = TRUE)
+hard_hams <- ReadEmails(hard_ham_folders, category = 'ham', verbose = TRUE)
+spams <- ReadEmails(spam_folders, category = 'spam', verbose = TRUE)
 ```
+
+Combine data frames.
 
 ```{r}
 sms <- bind_rows(spams, easy_hams, hard_hams)
 ```
+
+Write output.
 
 ```{r}
 write.csv(sms, file = "EMAILSpamCollectionFull.csv", quote = TRUE)
