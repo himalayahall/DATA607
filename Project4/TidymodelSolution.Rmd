@@ -239,7 +239,7 @@ null_predictions  %>%
   autoplot() +
   labs(
     color = NULL,
-    title = "ROC curve for observations (spam)",
+    title = "ROC curve for spam observations",
     subtitle = "With null classifier on the training set"
   )
 null_rs %>%
@@ -346,7 +346,7 @@ if (model_cls[1] != "rand_forest") {
       autoplot() +
       labs(
         color = NULL,
-        title = "ROC curve for observations (ham)",
+        title = "ROC curve for spam observations",
         subtitle = "Each resample fold is shown in a different color"
       )
 }
@@ -396,8 +396,8 @@ final_predictions  %>%
   autoplot() +
   labs(
     color = NULL,
-    title = "ROC curve for observations (ham)",
-    subtitle = "With final random forest classifier on the training set"
+    title = "ROC curve for spam observations",
+    subtitle = "With final random forest classifier on the test set"
   )
 ```
 
