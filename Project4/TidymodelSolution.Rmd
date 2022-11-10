@@ -71,7 +71,7 @@ registerDoMC(cores = usable_cores)
 
 # Load data
 
-Email data  is too big to load from [Github](https://github.com/himalayahall/DATA607/blob/main/Project4/EMAILSpamCollectionFull.csv). Download into current working directory.
+Email data is too big to load from [Github](https://github.com/himalayahall/DATA607/blob/main/Project4/EMAILSpamCollectionFull.csv). Download into current working directory.
 
 ```{r load-data}
 df <- read.csv("./EMAILSpamCollectionFull.csv")
@@ -91,6 +91,15 @@ glimpse(df)
 ```
 
 We expect data sets to be unbalanced, i.e. number of spam observations is a minority class. This class imbalance will influence how we build ML models.
+
+Generally speaking, balanced datasets lead to better ML outcomes. To address the class imbalance, we have a few options:
+
+    oversample the minority class (spam)
+    undersample the majority class (ham)
+    create synthetic minority class samples (e.g. SMOTE)
+    use weighted model during training. A weighted strategy, often called cost-matrix, is a hint to the model to pay more attention to samples from a minority class.
+
+We will undersample.
 
 ```{r props}
 props <- df %>% 
@@ -125,7 +134,7 @@ data_test  %>%
 
 ## Resampling
 
-To evaluate model performance during during model selection we **may** use 10-fold Cross-Validation. I say **may** use 10-fold because some models, like Randomforest, do not require it to get an unbiased estimate of the test set error (it is estimated internally), 
+To evaluate model performance during during model selection we **may** use 10-fold Cross-Validation. I say **may** use 10-fold because some models, like Randomforest, do not require it to get an unbiased estimate of the test set error (it is estimated internally),
 
 Let's define the folds and make sure folds have same strata as original data.
 
@@ -136,17 +145,17 @@ data_folds
 
 ## Recipe
 
-Set up model recipe to predict **category** (outcome) from the following predictors - email **subject**, sender email address (**from**), and the email **text**.  
+Set up model recipe to predict **category** (outcome) from the following predictors - email **subject**, sender email address (**from**), and the email **text**.
 
-Predictors are tokenized, stop words are removed, stemming takes place, and tokens filtered (max number of tokens retained and min times a token must appear in corpus in order to be considered). Finally, tokens are encoded using **tf-idf**. 
+Predictors are tokenized, stop words are removed, stemming takes place, and tokens filtered (max number of tokens retained and min times a token must appear in corpus in order to be considered). Finally, tokens are encoded using **tf-idf**.
 
-Knowing that we have a large quantity of data but the data is unbalanced, we downsample such that the majority class level will have (at most) twice as many rows as the minority level.  
+Knowing that we have a large quantity of data but the data is unbalanced, we downsample such that the majority class level will have (at most) twice as many rows as the minority level.
 
-Token transformations are done via [textrecipes] (https://www.rdocumentation.org/packages/textrecipes/versions/1.0.10)
+Token transformations are done via [textrecipes] (<https://www.rdocumentation.org/packages/textrecipes/versions/1.0.10>)
 
-Most models work with numeric data, not text. Text data is typically converted into a numeric representation before it can be used to build models. There are a number of techniques for encoding text such as  [Tf-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) and [word embedding](https://www.tensorflow.org/text/guide/word_embeddings). Both techniques can be used with tidymodels.
+Most models work with numeric data, not text. Text data is typically converted into a numeric representation before it can be used to build models. There are a number of techniques for encoding text such as [Tf-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) and [word embedding](https://www.tensorflow.org/text/guide/word_embeddings). Both techniques can be used with tidymodels.
 
-Load Stanford GloVE(https://nlp.stanford.edu/pubs/glove.pdf) trained on words from a 6 billion token corpus.
+Load Stanford GloVE(<https://nlp.stanford.edu/pubs/glove.pdf>) trained on words from a 6 billion token corpus.
 
 ```{r}
 glove6b <- textdata::embedding_glove6b(dimensions = 100)
@@ -197,7 +206,22 @@ data_recipe <- data_recipe %>%
 data_recipe
 ```
 
-Set up metrics of interest.
+Set up metrics of interest. Metrics measure model performance during training:
+
+-   **False negatives (fn)** and **False positives (fp)** are samples that were incorrectly classified. In our dataset **positive** implies **spam**.
+
+-   **True negatives (tn)** and **True positives (tp)** are samples that were correctly classified
+
+-   **Accuracy** is the percentage of examples correctly classified
+
+-   **Precision** is the percentage of predicted positives that were correctly classified
+
+-   **Recall** is the percentage of actual positives that were correctly classified
+
+-   **AUC** refers to the Area Under the Curve of a
+    Receiver Operating Characteristic curve (ROC-AUC). This metric is equal
+    to the probability that a classifier will rank a random positive sample
+    higher than a random negative sample
 
 ```{r metrix-setup}
 metrics = metric_set(accuracy, roc_auc, pr_auc, precision, recall)
@@ -246,7 +270,7 @@ null_rs %>%
   collect_metrics()
 ```
 
-The [confusion matrix](https://www.sciencedirect.com/topics/engineering/confusion-matrix) confirms that the null model simply guesses the majority class *ham* for each prediction. 
+The [confusion matrix](https://www.sciencedirect.com/topics/engineering/confusion-matrix) confirms that the null model simply guesses the majority class *ham* for each prediction.
 
 ```{r confusion-matrix-null-model}
 conf_mat_resampled(null_rs, tidy = FALSE) %>%
@@ -363,7 +387,7 @@ if (model_cls[1] != "rand_forest") {
 
 ## Final model
 
-So far we have been using the training data to both train and evaluate the model (using cross-validation). We can expect that the model **will not** perform quite as well on unseen data.  
+So far we have been using the training data to both train and evaluate the model (using cross-validation). We can expect that the model **will not** perform quite as well on unseen data.
 
 So far we have been keeping the test split in our back pocket. Now it's time to use the precious test data to evaluate the final model. Do final fit - train with full training data and test with testing data.
 
@@ -372,7 +396,7 @@ final_fitted <- last_fit(data_wf, data_split, metrics = metrics)
 final_fitted
 ```
 
-Extract predictions and metrics. The model has performed extremely well acrss all metrics. 
+Extract predictions and metrics. The model has performed extremely well acrss all metrics.
 
 ```{r}
 final_predictions <- collect_predictions(final_fitted)
@@ -400,4 +424,3 @@ final_predictions  %>%
     subtitle = "With final random forest classifier on the test set"
   )
 ```
-
