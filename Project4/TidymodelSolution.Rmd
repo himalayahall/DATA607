@@ -218,10 +218,7 @@ Set up metrics of interest. Metrics measure model performance during training:
 
 -   **Recall** is the percentage of actual positives that were correctly classified
 
--   **AUC** refers to the Area Under the Curve of a
-    Receiver Operating Characteristic curve (ROC-AUC). This metric is equal
-    to the probability that a classifier will rank a random positive sample
-    higher than a random negative sample
+-   **AUC** refers to the Area Under the Curve of a Receiver Operating Characteristic curve (ROC-AUC). This metric is equal to the probability that a classifier will rank a random positive sample higher than a random negative sample
 
 ```{r metrix-setup}
 metrics = metric_set(accuracy, roc_auc, pr_auc, precision, recall)
