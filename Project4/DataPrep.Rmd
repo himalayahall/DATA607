@@ -202,7 +202,7 @@ registerDoParallel(cluster)
 1 + (num_cores / 2)
 ```
 
-Find all email that are to bve processed.
+Find all email that have to be processed.
 
 ```{r find-all-emails}
 easy_hams <- FindCategoryEmails(cat = 'ham', easy_ham_folders)
