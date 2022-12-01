@@ -42,7 +42,7 @@ In this markdown we will use [tidymodels](https://www.tidymodels.org) to build h
 
 # Load library
 
-```{r load-libs}
+```{r load-libs warning=FALSE}
 library(tidyverse)
 library(tidymodels)
 library(parsnip)
