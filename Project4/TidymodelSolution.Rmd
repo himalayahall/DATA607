@@ -113,9 +113,9 @@ props
 Split into train and test data sets. Test data will be set aside and not used until the final model is tested.
 
 ```{r create-data-splits}
-data_split <- initial_split(df, strata = category)
-data_train <- training(data_split)
-data_test <- testing(data_split)
+data_split <- rsample::initial_split(df, strata = category)
+data_train <- rsample::training(data_split)
+data_test <- rsample::testing(data_split)
 ```
 
 Verify train/test splits have same proportions as original data set. Check.
@@ -139,7 +139,7 @@ To evaluate model performance during during model selection we **may** use 10-fo
 Let's define the folds and make sure folds have same strata as original data.
 
 ```{r folds-setup}
-data_folds <- vfold_cv(data_train, strata = category) # defaults to 10 fold, 1 repeats
+data_folds <- rsample::vfold_cv(data_train, strata = category) # defaults to 10 fold, 1 repeats
 data_folds
 ```
 
@@ -172,35 +172,34 @@ We will use word embedding in the data recipe pipeline to encode predictor varia
 
 ```{r create-model-recipe}
 library(themis) # for step_downsample
-data_recipe <- recipe(category ~ ., data = data_train)
-data_recipe <- data_recipe %>%
+data_recipe <- recipes::recipe(category ~ ., data = data_train) %>%
                 # retain these variables for reference (not to be used as model outcome or predictors)
-                update_role(id, n_words, new_role = "REF") %>%
-                step_tokenize(all_predictors(), 
+                recipes::update_role(id, n_words, new_role = "REF") %>%
+                textrecipes::step_tokenize(all_predictors(), 
                                 options = list(lowercase = TRUE, 
                                 strip_punct = TRUE)) %>%
                 
                 # set max tokens (words) for each predictor
-                step_tokenfilter(all_predictors(), max_tokens = 200) %>%
+                textrecipes::step_tokenfilter(all_predictors(), max_tokens = 200) %>%
     
                 # remove stopwords (optional)
-                step_stopwords(text) %>%
-                step_stopwords(subject) %>%
+                textrecipes::step_stopwords(text) %>%
+                textrecipes::step_stopwords(subject) %>%
 
                 # stemming (optional)
-                step_stem(text) %>%
-                step_stem(subject) %>%
+                textrecipes::step_stem(text) %>%
+                textrecipes::step_stem(subject) %>%
 
                 # merge from and subject (optional)
-                step_tokenmerge(from, subject) %>%
+                textrecipes::step_tokenmerge(from, subject) %>%
     
                 # GloVE word embedding
-                step_word_embeddings(all_predictors(), embeddings = glove6b) %>%
+                textrecipes::step_word_embeddings(all_predictors(), embeddings = glove6b) %>%
                 
-                # tf-idf encoding is iyet another option
+                # tf-idf encoding is yet another option
                 # step_tfidf(all_predictors()) %>% #TF-IDF word embedding
 
-                step_downsample(category, 
+                themis::step_downsample(category, 
                                 under_ratio = 2 
                                 )
 data_recipe
@@ -221,14 +220,14 @@ Set up metrics of interest. Metrics measure model performance during training:
 -   **AUC** refers to the Area Under the Curve of a Receiver Operating Characteristic curve (ROC-AUC). This metric is equal to the probability that a classifier will rank a random positive sample higher than a random negative sample
 
 ```{r metrix-setup}
-metrics = metric_set(accuracy, roc_auc, pr_auc, precision, recall)
+metrics <- yardstick::metric_set(accuracy, roc_auc, pr_auc, precision, recall)
 metrics
 ```
 
 Set up re-sampling control.
 
 ```{r control-setup}
-control <- control_resamples(save_pred = TRUE, allow_par = TRUE, parallel_over = "resamples")
+control <- tune::control_resamples(save_pred = TRUE, allow_par = TRUE, parallel_over = "resamples")
 control
 ```
 
@@ -237,14 +236,14 @@ control
 It's important to look at the **null model** to set up a baseline. For binary classification modeling, the null model always predicts the majority class. Consequently, **accuracy** of null model equals proportion of the majority class. For example, if there are 90% ham (not spam) observations then accuracy of the null model will also be 90%. Another way to look at it is that a model that is 90% accurate is not necessarily any good!
 
 ```{r cross-validate-null-mode}
-null_classification <- null_model() %>%
+null_classification <- parsnip::null_model() %>%
   set_engine("parsnip") %>%
   set_mode("classification")
 
-null_rs <- workflow() %>%
-  add_recipe(data_recipe) %>%
-  add_model(null_classification) %>%
-  fit_resamples(
+null_rs <- workflows::workflow() %>%
+  workflows::add_recipe(data_recipe) %>%
+  workflows::add_model(null_classification) %>%
+  tune::fit_resamples(
     data_folds, 
     metrics = metrics,
     control = control
@@ -254,9 +253,9 @@ null_rs <- workflow() %>%
 We can see the null model has Accuracy equal to proportion of the majority class and a very low [ROC](https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc). Slope of the ROC curve shows the null model is unable to discriminate between the two classes.
 
 ```{r roc-plot-null-model}
-null_predictions <- collect_predictions(null_rs)
-null_predictions  %>%
-  roc_curve(truth = category, .pred_spam) %>%
+null_predictions <- tune::collect_predictions(null_rs)
+null_predictions %>%
+  yardstick::roc_curve(truth = category, .pred_spam) %>%
   autoplot() +
   labs(
     color = NULL,
@@ -270,7 +269,7 @@ null_rs %>%
 The [confusion matrix](https://www.sciencedirect.com/topics/engineering/confusion-matrix) confirms that the null model simply guesses the majority class *ham* for each prediction.
 
 ```{r confusion-matrix-null-model}
-conf_mat_resampled(null_rs, tidy = FALSE) %>%
+tune::conf_mat_resampled(null_rs, tidy = FALSE) %>%
   autoplot(type = "heatmap")
 
 ```
@@ -287,22 +286,27 @@ model <- rand_forest() %>%
   set_mode("classification") %>%
   set_engine(engine = "ranger", importance = "impurity")
 
-#Linear support vector machine.
-# model <- svm_linear() %>%
-#   set_mode("classification") %>%
-#   set_engine(engine = "kernlab")
-
 # Boosted trees.
 # model <- boost_tree() %>%
 #   set_mode("classification") %>%
 #   set_engine(engine = "xgboost", trees = 20)
 # model
 
-# Linear support vector machine.
+# Logistic Regression
+# model <- logistic_reg() %>%
+#   set_mode("classification") %>%
+# model
+
+# Naive Bayes
+# model <- naive_Bayes() %>%
+#   set_mode("classification") %>%
+#   set_engine(engine = "KlaR")
+# model
+
+#Linear support vector machine.
 # model <- svm_linear() %>%
 #   set_mode("classification") %>%
 #   set_engine(engine = "kernlab")
-# model
 
 # Multi-layer perceptron, a single layer neural network.
 # num_epochs = 20
@@ -319,7 +323,7 @@ model
 Create [workflow](https://workflows.tidymodels.org) to wrap data recipe and model.
 
 ```{r setup-workflow}
-data_wf <- workflow() %>%
+data_wf <- workflows::workflow() %>%
                 add_recipe(data_recipe) %>%
                 add_model(model)
 data_wf
